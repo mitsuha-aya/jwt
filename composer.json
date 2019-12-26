@@ -1,0 +1,15 @@
+{
+    "name": "mitsuha_aya/jwt",
+    "description": "jwt插件包",
+    "license": "暂无",
+    "authors": [
+        {
+            "name": "mitsuha aya",
+            "email": "1150527016@qq.com"
+        }
+    ],
+    "require": {
+        "php": "^7.2",
+        "another-vendor/package": "1.*"
+    }
+}
