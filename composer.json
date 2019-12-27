@@ -10,6 +10,7 @@
     ],
     "require": {
         "php": "^7.2",
-        "another-vendor/package": "1.*"
+        "another-vendor/package": "1.*",
+        "ext-json":"*"
     }
 }
