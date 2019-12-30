@@ -6,7 +6,7 @@
  * Time: 15:30
  */
 
-namespace MiTsuHaAya\Provider;
+namespace MiTsuHaAya\JWT\Provider;
 
 
 class Laravel

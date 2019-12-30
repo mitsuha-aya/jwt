@@ -6,11 +6,11 @@
  * Time: 16:57
  */
 
-namespace MiTsuHaAya\Sign;
+namespace MiTsuHaAya\JWT\Sign;
 
 abstract class Base implements Contract
 {
-    public function secret()
+    public function secret(): string
     {
         $path = dirname(__DIR__).'/config.php';
 

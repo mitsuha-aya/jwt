@@ -6,7 +6,7 @@
  * Time: 9:32
  */
 
-namespace MiTsuHaAya\Sign;
+namespace MiTsuHaAya\JWT\Sign;
 
 
 interface Contract

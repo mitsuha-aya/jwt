@@ -1,11 +1,11 @@
 <?php
 
-namespace MiTsuHaAya;
+namespace MiTsuHaAya\JWT;
 
-use MiTsuHaAya\Exceptions\SignatureIllegal;
-use MiTsuHaAya\Exceptions\TokenCannotParsed;
-use MiTsuHaAya\Sign\Application as SignApp;
-use MiTsuHaAya\Traits\PropertyToMethod;
+use MiTsuHaAya\JWT\Exceptions\SignatureIllegal;
+use MiTsuHaAya\JWT\Exceptions\TokenCannotParsed;
+use MiTsuHaAya\JWT\Sign\Application as SignApp;
+use MiTsuHaAya\JWT\Traits\PropertyToMethod;
 
 /**
  * @package MiTsuHaAya

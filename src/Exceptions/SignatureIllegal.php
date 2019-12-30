@@ -6,7 +6,7 @@
  * Time: 17:52
  */
 
-namespace MiTsuHaAya\Exceptions;
+namespace MiTsuHaAya\JWT\Exceptions;
 
 use Exception;
 

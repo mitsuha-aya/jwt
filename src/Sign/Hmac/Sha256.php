@@ -6,9 +6,9 @@
  * Time: 17:02
  */
 
-namespace MiTsuHaAya\Sign\Hmac;
+namespace MiTsuHaAya\JWT\Sign\Hmac;
 
-use MiTsuHaAya\Sign\Base;
+use MiTsuHaAya\JWT\Sign\Base;
 
 class Sha256 extends Base
 {

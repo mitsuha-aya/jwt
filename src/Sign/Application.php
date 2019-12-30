@@ -6,10 +6,10 @@
  * Time: 17:07
  */
 
-namespace MiTsuHaAya\Sign;
+namespace MiTsuHaAya\JWT\Sign;
 
-use MiTsuHaAya\Exceptions\HashNotSupport;
-use MiTsuHaAya\Sign\Hmac\Sha256;
+use MiTsuHaAya\JWT\Exceptions\HashNotSupport;
+use MiTsuHaAya\JWT\Sign\Hmac\Sha256;
 
 /**
  * Class Application
@@ -21,7 +21,7 @@ class Application
         'HS256' => Sha256::class
     ];
 
-    /** @var Contract $signer */
+    /** @var Base $signer */
     public $signer;
 
     /**

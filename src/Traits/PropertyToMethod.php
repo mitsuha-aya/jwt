@@ -6,7 +6,7 @@
  * Time: 17:49
  */
 
-namespace MiTsuHaAya\Traits;
+namespace MiTsuHaAya\JWT\Traits;
 
 use BadMethodCallException;
 

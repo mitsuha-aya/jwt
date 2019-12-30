@@ -6,7 +6,7 @@
  * Time: 17:11
  */
 
-namespace MiTsuHaAya;
+namespace MiTsuHaAya\JWT;
 
 
 class TokenFacade
