@@ -12,12 +12,12 @@ use MiTsuHaAya\Sign\Base;
 
 class Sha256 extends Base
 {
-    public function alg()
+    public function alg(): string
     {
         return 'HS256';
     }
 
-    public function encode($data)
+    public function encode($data): string
     {
         return hash_hmac('sha256',$data,$this->secret());
     }

@@ -2,6 +2,8 @@
 
 namespace MiTsuHaAya;
 
+use MiTsuHaAya\Exceptions\SignatureIllegal;
+use MiTsuHaAya\Exceptions\TokenCannotParsed;
 use MiTsuHaAya\Sign\Application as SignApp;
 use MiTsuHaAya\Traits\PropertyToMethod;
 
@@ -29,12 +31,24 @@ class Token
         'jti' => ''                 // JWT ID 编号
     ];
 
-    // 根据 主键 生成Token
-    public function onPrimaryKey($id): string
-    {
-        $this->payload['jti'] = $id;    // 使用 主键 作为 本次token的 jwt id
+    public $signature;
 
-        return $this->make();
+    public function parse($token): self
+    {
+        $token = explode('.', $token);
+        if(count($token) !== 3)
+            throw new TokenCannotParsed('无法解析Token');
+
+        [$header, $payload, $this->signature] = $token;
+
+        $this->header = $this->decode($header);
+        $this->payload = $this->decode($payload);
+
+        $this->checkHeader($this->header);
+        $this->checkPayload($this->payload);
+        $this->checkSignature($this->signature);
+
+        return $this;
     }
 
     public function make(): string
@@ -43,9 +57,9 @@ class Token
         $payload = $this->encode($this->payload);
 
         $signApp = new SignApp();
-        $signature = $signApp->sign($this->header['alg'],$header.'.'.$payload);
+        $this->signature = $signApp->sign($this->header['alg'],$header.'.'.$payload);
 
-        return $header.'.'.$payload.'.'.$signature;
+        return $header.'.'.$payload.'.'.$this->signature;
     }
 
     public function encode(array $data): string
@@ -53,6 +67,41 @@ class Token
         $encode = json_encode($data);
         $encode = base64_encode($encode);
         return str_replace(['=', '+','/'], ['','-','_'], $encode);
+    }
+
+    public function decode(string $code): array
+    {
+        $code = str_replace( ['','-','_'],['=', '+','/'], $code);
+        $code = base64_decode($code);
+        return json_decode($code,true);
+    }
+
+    public function checkHeader($array): bool
+    {
+        if(!isset($array['alg'], $array['type'])){
+            throw new TokenCannotParsed('无法解析Token header');
+        }
+
+        return true;
+    }
+
+    public function checkPayload($array): bool
+    {
+        if(!isset($array['iss'], $array['exp'],$array['sub'],$array['aud'],$array['nbf'],$array['iat'],$array['jti'])){
+            throw new TokenCannotParsed('无法解析Token payload');
+        }
+
+        return true;
+    }
+
+    public function checkSignature(string $signature): bool
+    {
+        $nowSignature = explode('.',$this->make())[2];
+
+        if($nowSignature !== $signature)
+            throw new SignatureIllegal('Token signature 不正确');
+
+        return true;
     }
 
 }

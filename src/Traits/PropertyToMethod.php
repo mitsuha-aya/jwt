@@ -19,7 +19,7 @@ trait PropertyToMethod
                 'Method %s::%s does not exist.', static::class, $method
             ));
 
-        if (count($arguments) == 2)
+        if (count($arguments) === 2)
             return $this->$method[ $arguments[0] ] = $arguments[1];
 
         return empty($arguments[0]) ? $this->$method[ $arguments[0] ] : $this->$method;

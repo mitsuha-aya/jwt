@@ -8,6 +8,7 @@
 
 namespace MiTsuHaAya\Sign;
 
+use MiTsuHaAya\Exceptions\HashNotSupport;
 use MiTsuHaAya\Sign\Hmac\Sha256;
 
 /**
@@ -28,15 +29,18 @@ class Application
      * @param $alg
      * @param $string
      * @return string
+     * @throws HashNotSupport
      */
-    public function sign($alg,$string)
+    public function sign($alg,$string): string
     {
-        $class = $this->supported[$alg] ?? trigger_error("Sign暂不支持{$alg}算法",E_USER_ERROR);
-        $this->signer = new $class();
+        if(isset($this->supported[$alg])){
+            $class = $this->supported[$alg];
+            $this->signer = new $class();
+            return $this->signer->encode($string);
+        }
 
-        return $this->signer->encode($string);
+        throw new HashNotSupport("Sign暂不支持{$alg}算法");
     }
-
 
 
 }
