@@ -10,6 +10,10 @@ namespace MiTsuHaAya\Sign;
 
 use MiTsuHaAya\Sign\Hmac\Sha256;
 
+/**
+ * Class Application
+ * @package MiTsuHaAya\Sign
+ */
 class Application
 {
     public $supported = [
@@ -19,41 +23,20 @@ class Application
     /** @var Contract $signer */
     public $signer;
 
-    public function __construct($alg)
+    /**
+     * 进行加密
+     * @param $alg
+     * @param $string
+     * @return string
+     */
+    public function sign($alg,$string)
     {
         $class = $this->supported[$alg] ?? trigger_error("Sign暂不支持{$alg}算法",E_USER_ERROR);
+        $this->signer = new $class();
 
-//        $this->signer = new $class();
+        return $this->signer->encode($string);
     }
 
-    // 进行加密
-    public function sign($string)
-    {
-        return $this->signer->encode($string,$this->secret());
-    }
 
-    // 获取
-    public function secret()
-    {
-
-
-    }
-
-    public function save()
-    {
-
-
-        return '';
-    }
-
-    // 生成 key
-    public function generate($size = 64)
-    {
-        $bytes = random_bytes($size);
-        $bytes = base64_encode($bytes);
-        $bytes = str_replace(['/', '+', '='], '', $bytes);
-
-        return substr($bytes, 0, $size);    // base64 会增大长度,所以需要截取
-    }
 
 }

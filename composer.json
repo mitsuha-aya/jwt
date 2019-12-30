@@ -2,6 +2,9 @@
     "name": "mitsuha_aya/jwt",
     "description": "jwt插件包",
     "license": "proprietary",
+    "keywords": [
+        "JWT"
+    ],
     "authors": [
         {
             "name": "mitsuha aya",
@@ -10,7 +13,6 @@
     ],
     "require": {
         "php": "^7.2",
-        "another-vendor/package": "1.*",
         "ext-json":"*"
     }
 }

@@ -8,18 +8,18 @@
 
 namespace MiTsuHaAya\Sign\Hmac;
 
-use MiTsuHaAya\Sign\Contract;
+use MiTsuHaAya\Sign\Base;
 
-class Sha256 implements Contract
+class Sha256 extends Base
 {
     public function alg()
     {
         return 'HS256';
     }
 
-    public function encode($data,$secret)
+    public function encode($data)
     {
-        return hash_hmac('sha256',$data,$secret);
+        return hash_hmac('sha256',$data,$this->secret());
     }
 
 }

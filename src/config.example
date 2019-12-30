@@ -1,0 +1,6 @@
+<?php
+
+return [
+    'hash' => 'HS256',
+    'secret' => '{secret}'
+];
