@@ -22,7 +22,10 @@ class ServiceProvider extends IlluminateProvider
         // console 启动时，解析 并增加 该Command类
         $this->commands('mitsuha_aya.jwt.secret');
 
-        // TODO 初始化
+        // 注册 config.php 的 发布配置
+        $path = dirname(__DIR__, 2) . '/config.php';    // 向上走两层 找到 config.php
+        $this->publishes([$path => config_path('ma_jwt.php')], 'config');
+
 
     }
 

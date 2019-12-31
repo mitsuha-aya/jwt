@@ -8,6 +8,8 @@ jwt插件包 <br>
 
 所有 控制台命令 均已 : `mitsuha_aya:` 为前缀
 
+所有 简写 均为 : `ma:` 为前缀
+
 
 illuminate/support ： laravel支持的 ServiceProvider <br>
 illuminate/console ： laravel支持的 Artisan Command
