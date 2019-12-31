@@ -79,7 +79,7 @@ class Token
     public function checkHeader($array): bool
     {
         if(!isset($array['alg'], $array['type'])){
-            throw new TokenCannotParsed('无法解析Token header');
+            throw new TokenCannotParsed('Token header 解析后缺少必要参数');
         }
 
         return true;
@@ -87,8 +87,9 @@ class Token
 
     public function checkPayload($array): bool
     {
-        if(!isset($array['iss'], $array['exp'],$array['sub'],$array['aud'],$array['nbf'],$array['iat'],$array['jti'])){
-            throw new TokenCannotParsed('无法解析Token payload');
+        if(!isset($array['iss'], $array['exp'],$array['sub'],$array['aud'],$array['nbf'],$array['iat'],$array['jti']))
+        {
+            throw new TokenCannotParsed('Token payload 解析后缺少必要参数');
         }
 
         return true;
@@ -98,8 +99,9 @@ class Token
     {
         $nowSignature = explode('.',$this->make())[2];
 
-        if($nowSignature !== $signature)
+        if($nowSignature !== $signature){
             throw new SignatureIllegal('Token signature 不正确');
+        }
 
         return true;
     }
