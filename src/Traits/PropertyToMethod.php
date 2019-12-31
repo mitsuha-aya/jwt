@@ -14,15 +14,21 @@ trait PropertyToMethod
 {
     public function __call(string $method, array $arguments)
     {
-        if (!property_exists($this, $method))
+        if (!property_exists($this, $method)) {
             throw  new BadMethodCallException(sprintf(
                 'Method %s::%s does not exist.', static::class, $method
             ));
+        }
 
-        if (count($arguments) === 2)
-            return $this->$method[ $arguments[0] ] = $arguments[1];
+        if(count($arguments) === 0){
+            return $this->$method;
+        }
 
-        return empty($arguments[0]) ? $this->$method[ $arguments[0] ] : $this->$method;
+        if (count($arguments) === 1){
+            return $this->$method[ $arguments[0] ];
+        }
+
+        return $this->$method[ $arguments[0] ] = $arguments[1];
     }
 
 }

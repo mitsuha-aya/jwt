@@ -11,21 +11,22 @@ use MiTsuHaAya\JWT\Traits\PropertyToMethod;
  * @package MiTsuHaAya
  * @method mixed header($key = null,$value = null)
  * @method mixed payload($key = null,$value = null)
+ * @method mixed signature()
  */
 class Token
 {
     use PropertyToMethod;
 
     public $header = [
-        'alg' => 'HS256',
+        'alg' => '',
         'type' => 'JWT'
     ];
 
     public $payload = [
-        'iss' => 'jwt',             // issuer 签发人              [项目名称]
+        'iss' => '',                // issuer 签发人
         'exp' => '',                // expiration time 过期时间
-        'sub' => 'jwt-user',        // subject 主题               [Model类名]
-        'aud' => 'jwt-user',        // audience 受众              [Model类名]
+        'sub' => '',                // subject 主题
+        'aud' => '',                // audience 受众
         'nbf' => '',                // Not Before 生效时间
         'iat' => '',                // Issued At 签发时间
         'jti' => ''                 // JWT ID 编号
@@ -36,8 +37,9 @@ class Token
     public function parse($token): self
     {
         $token = explode('.', $token);
-        if(count($token) !== 3)
+        if(count($token) !== 3){
             throw new TokenCannotParsed('无法解析Token');
+        }
 
         [$header, $payload, $this->signature] = $token;
 
@@ -107,4 +109,3 @@ class Token
     }
 
 }
-

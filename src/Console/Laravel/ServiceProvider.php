@@ -21,6 +21,9 @@ class ServiceProvider extends IlluminateProvider
 
         // console 启动时，解析 并增加 该Command类
         $this->commands('mitsuha_aya.jwt.secret');
+
+        // TODO 初始化
+
     }
 
 

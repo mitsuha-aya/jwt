@@ -22,7 +22,7 @@ class Command extends IlluminateCommand
         $envPath = $this->laravel->environmentFilePath();
         $env = file_get_contents($envPath);
 
-        if(Str::contains($env,'MITSUHA_JWT_SECRET')){
+        if(Str::contains($env,'MITSUHA_AYA_JWT_SECRET')){
             $this->info('密钥已存在');
             return;
         }
@@ -33,7 +33,7 @@ class Command extends IlluminateCommand
         $bytes = str_replace(['/', '+', '='], '', $bytes);
         $secret = substr($bytes, 0, $size);    // base64 会增大长度,所以需要截取
 
-        file_put_contents($envPath,PHP_EOL.'MITSUHA_JWT_SECRET='.$secret,FILE_APPEND);
+        file_put_contents($envPath,PHP_EOL.'MITSUHA_AYA_JWT_SECRET='.$secret,FILE_APPEND);
 
         $this->info('密钥创建完成：'.$secret);
     }
