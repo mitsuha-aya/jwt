@@ -6,20 +6,20 @@ use MiTsuHaAya\JWT\Exceptions\SignatureIllegal;
 use MiTsuHaAya\JWT\Exceptions\TokenCannotParsed;
 use MiTsuHaAya\JWT\Sign\Application as SignApp;
 use MiTsuHaAya\JWT\Traits\PropertyToMethod;
+use MiTsuHaAya\JWT\Config\Application as ConfigApp;
 
 /**
- * @package MiTsuHaAya
  * @method mixed header($key = null,$value = null)
  * @method mixed payload($key = null,$value = null)
- * @method mixed signature()
+ * @method string|null signature()
  */
 class Token
 {
     use PropertyToMethod;
 
     public $header = [
-        'alg' => '',
-        'type' => 'JWT'
+        'alg' => '',                // Token加密算法
+        'type' => ''                // Token类型
     ];
 
     public $payload = [
@@ -34,7 +34,25 @@ class Token
 
     public $signature;
 
-    public function parse($token): self
+    public $ttl,$refreshTtl,$leeway;
+
+    public function __construct()
+    {
+        $this->init();
+    }
+
+    public function init(): Token
+    {
+        $this->header['alg'] = ConfigApp::get('alg');
+
+        $this->ttl = ConfigApp::get('ttl');
+        $this->refreshTtl = ConfigApp::get('refresh_ttl');
+        $this->leeway = ConfigApp::get('leeway');
+
+        return $this;
+    }
+
+    public function parse($token): Token
     {
         $token = explode('.', $token);
         if(count($token) !== 3){
@@ -48,7 +66,7 @@ class Token
 
         $this->checkHeader($this->header);
         $this->checkPayload($this->payload);
-        $this->checkSignature($this->signature);
+        $this->checkSignature($this->signature);    // Tips: 这里会额外调用 make一次
 
         return $this;
     }
@@ -102,7 +120,7 @@ class Token
         $nowSignature = explode('.',$this->make())[2];
 
         if($nowSignature !== $signature){
-            throw new SignatureIllegal('Token signature 不正确');
+            throw new SignatureIllegal('Token signature 解析后不正确');
         }
 
         return true;

@@ -20,13 +20,8 @@ interface Contract
     /**
      * 使用当前算法进行 加密
      * @param $data
+     * @param $secret
      * @return string
      */
-    public function encode($data): string ;
-
-    /**
-     * 获取 当前算法 所需的密钥
-     * @return string
-     */
-    public function secret(): string ;
+    public function encode($data,$secret): string ;
 }

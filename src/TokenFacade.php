@@ -11,11 +11,12 @@ namespace MiTsuHaAya\JWT;
 
 class TokenFacade
 {
-    public static function onPrimaryKey($id)
+    public static function onPrimaryKey($id): string
     {
         $token = new Token();
         $token->payload['jti'] = $id;    // 使用 主键 作为 本次token的 jwt id
 
         return (new Token())->make();
     }
+
 }

@@ -8,18 +8,19 @@
 
 namespace MiTsuHaAya\JWT\Sign\Hmac;
 
-use MiTsuHaAya\JWT\Sign\Base;
 
-class Sha256 extends Base
+use MiTsuHaAya\JWT\Sign\Contract;
+
+class Sha256 implements Contract
 {
     public function alg(): string
     {
         return 'HS256';
     }
 
-    public function encode($data): string
+    public function encode($data,$secret): string
     {
-        return hash_hmac('sha256',$data,$this->secret());
+        return hash_hmac('sha256',$data,$secret);
     }
 
 }
