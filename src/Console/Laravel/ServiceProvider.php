@@ -8,8 +8,10 @@
 
 namespace MiTsuHaAya\JWT\Console\Laravel;
 
+use Illuminate\Redis\RedisManager;
 use Illuminate\Support\ServiceProvider as IlluminateProvider;
 use MiTsuHaAya\JWT\Config\Application as ConfigApp;
+use MiTsuHaAya\JWT\TokenFacade;
 
 class ServiceProvider extends IlluminateProvider
 {
@@ -20,9 +22,13 @@ class ServiceProvider extends IlluminateProvider
     {
         $this->artisanSecret();    // 注册 生成 密钥的 Artisan命令
 
-        $config = $this->publishConfig();    // 注册 config.php 的 发布配置
+        $config = $this->publishConfig();    // 注册 config.php 的 发布配置 并返回最新的 config
 
-        ConfigApp::init($config);   // 初始化 config信息
+        $publicKey = dirname(__DIR__,2).'/Config/rsa_sha512_public.pem';
+        $privateKey = dirname(__DIR__,2).'/Config/rsa_sha512_private.pem';
+        ConfigApp::init($config,$publicKey,$privateKey);   // 初始化 config信息
+
+        $this->initRedis($config['redis']);  // 初始化 redis信息
     }
 
     /**
@@ -52,12 +58,37 @@ class ServiceProvider extends IlluminateProvider
         $configPath = dirname(__DIR__, 2) . '/Config/default.php';    // 找到 default.php
 
         $this->publishes([$configPath => config_path("$publishConfigName.php")], 'config');
-        //                          config_path() 由 Laravel的框架代码 提供，并没有composer包
+        //                          config_path() 由 Laravel的框架代码 提供
 
         // 每次启动时 将 发布后的 config 覆盖 自己的config
         $this->mergeConfigFrom($configPath, $publishConfigName);
 
         return config($publishConfigName);  // Laravel框架的 辅助函数
+    }
+
+    /**
+     * 初始化redis 至 TokenFacade中
+     * @param $redisConfig
+     */
+    private function initRedis($redisConfig): void
+    {
+        if(isset($this->app['redis'])){
+            TokenFacade::$redis = $this->app['redis'];
+            return;
+        }
+
+        $options = $redisConfig['options'];
+        unset($redisConfig['options']);
+
+        $redisConfig = [
+            'client' => 'phpredis',
+            'ma_jwt' => $redisConfig,
+            'options' => $options
+        ];
+
+        $redisManager = new RedisManager($this->app,'phpredis', $redisConfig);
+
+        TokenFacade::$redis = $redisManager->connection('ma_jwt');      // 初始化 redis
     }
 
 }

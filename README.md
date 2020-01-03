@@ -12,4 +12,6 @@ jwt插件包 <br>
 
 
 illuminate/support ： laravel支持的 ServiceProvider <br>
-illuminate/console ： laravel支持的 Artisan Command
+illuminate/console ： laravel支持的 Artisan Command <br>
+vlucas/phpdotenv ： env函数
+illuminate/redis ： 使用 PhpRedis 存储Token信息

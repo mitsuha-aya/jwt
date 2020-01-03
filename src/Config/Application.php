@@ -8,14 +8,16 @@
 
 namespace MiTsuHaAya\JWT\Config;
 
-
 class Application
 {
     public static $config = [];
+    public static $publicKeyPath,$privateKeyPath;
 
-    public static function init($config): void
+    public static function init($config,$publicKeyPath,$privateKeyPath): void
     {
         static::$config = $config;
+        static::$publicKeyPath = $publicKeyPath;
+        static::$privateKeyPath = $privateKeyPath;
     }
 
     public static function set($key,$value)
@@ -28,5 +30,14 @@ class Application
         return static::$config[$key] ?? $default;
     }
 
+    public static function publicKey()
+    {
+        return file_get_contents(static::$publicKeyPath);
+    }
+
+    public static function privateKey()
+    {
+        return file_get_contents(static::$privateKeyPath);
+    }
 
 }
