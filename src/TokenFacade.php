@@ -9,6 +9,7 @@
 namespace MiTsuHaAya\JWT;
 
 
+use Illuminate\Redis\Connections\Connection;
 use Illuminate\Redis\Connections\PhpRedisConnection;
 use Illuminate\Redis\Connectors\PhpRedisConnector;
 use Illuminate\Support\ConfigurationUrlParser;
@@ -47,15 +48,14 @@ class TokenFacade
         $signApp = new SignApp();
 
         $token->payload['jti'] = $signApp->encode($id);    // 使用 主键 作为 本次token的 jwt id
-
         $token->payload['sub'] = $signApp->encode(get_class($model)); // 使用 类型作为 本次token的 主题
 
         return $token->make();
     }
 
-    public static function redis(): PhpRedisConnection
+    public static function redis(): Connection
     {
-        if(! static::$redis instanceof PhpRedisConnection){
+        if(! static::$redis instanceof Connection){
             $redisConfig = ConfigApp::get('redis');
 
             $options = $redisConfig['options'] ?? [];
@@ -67,6 +67,7 @@ class TokenFacade
                 return ! in_array($key, ['driver', 'username'], true);
             }, ARRAY_FILTER_USE_KEY);
 
+            // 默认使用 phpRedis
             $phpRedis = (new PhpRedisConnector)->connect($redisConfig,$options);
 
             static::$redis = $phpRedis;

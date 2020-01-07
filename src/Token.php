@@ -49,7 +49,6 @@ class Token
     public function init(): Token
     {
         $this->header['alg'] = ConfigApp::get('alg');
-
         $this->ttl = ConfigApp::get('ttl');
         $this->refreshTtl = ConfigApp::get('refresh_ttl');
         $this->leeway = ConfigApp::get('leeway');
@@ -61,9 +60,10 @@ class Token
      * 解析Token
      * @param string $tokenString
      * @return Token
+     * @throws Exceptions\HashNotSupport
+     * @throws Exceptions\OpensslDecryptFail
      * @throws SignatureIllegal
      * @throws TokenCannotParsed
-     * @throws Exceptions\HashNotSupport
      */
     public function parse(string $tokenString): Token
     {
@@ -154,6 +154,7 @@ class Token
 
     /**
      * 制作Token
+     * (payload加上时间、生成signature)
      * @return string
      * @throws Exceptions\HashNotSupport
      */

@@ -57,13 +57,12 @@ class ServiceProvider extends IlluminateProvider
 
         $configPath = dirname(__DIR__, 2) . '/Config/default.php';    // 找到 default.php
 
-        $this->publishes([$configPath => config_path("$publishConfigName.php")], 'config');
-        //                          config_path() 由 Laravel的框架代码 提供
+        $this->publishes([$configPath => $this->app->configPath("$publishConfigName.php")], 'config');
 
         // 每次启动时 将 发布后的 config 覆盖 自己的config
         $this->mergeConfigFrom($configPath, $publishConfigName);
 
-        return config($publishConfigName);  // Laravel框架的 辅助函数
+        return $this->app->get($publishConfigName) ?: file_get_contents($configPath);  // Laravel框架的 辅助函数
     }
 
     /**
@@ -73,20 +72,20 @@ class ServiceProvider extends IlluminateProvider
     private function initRedis($redisConfig): void
     {
         if(isset($this->app['redis'])){
-            TokenFacade::$redis = $this->app['redis'];
-            return;
+            /** @var RedisManager $redis */
+            $redisManager = $this->app['redis'];
+        }else{
+            $options = $redisConfig['options'];
+            unset($redisConfig['options']);
+
+            $redisConfig = [
+                'client' => 'phpredis',
+                'ma_jwt' => $redisConfig,
+                'options' => $options
+            ];
+
+            $redisManager = new RedisManager($this->app,'phpredis', $redisConfig);
         }
-
-        $options = $redisConfig['options'];
-        unset($redisConfig['options']);
-
-        $redisConfig = [
-            'client' => 'phpredis',
-            'ma_jwt' => $redisConfig,
-            'options' => $options
-        ];
-
-        $redisManager = new RedisManager($this->app,'phpredis', $redisConfig);
 
         TokenFacade::$redis = $redisManager->connection('ma_jwt');      // 初始化 redis
     }

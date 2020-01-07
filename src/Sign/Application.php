@@ -62,17 +62,19 @@ class Application
      */
     public function encode($data)
     {
+        $data = json_encode($data);
+
         $publicKey = ConfigApp::publicKey();
         $publicKey = openssl_pkey_get_public($publicKey);
 
-        $result = openssl_public_encrypt(json_encode($data),$encode,$publicKey);
+        $result = openssl_public_encrypt($data,$encode,$publicKey);
         if(!$result){
             throw new OpensslEncryptFail('根据公钥加密失败');
         }
 
         openssl_free_key($publicKey);
 
-        return $encode;
+        return base64_encode($encode);
     }
 
     /**
@@ -83,6 +85,8 @@ class Application
      */
     public function decode($data)
     {
+        $data = base64_decode($data);
+
         $privateKey = ConfigApp::privateKey();
         $privateKey = openssl_pkey_get_private($privateKey);
 
