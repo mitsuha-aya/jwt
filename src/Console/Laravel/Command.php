@@ -17,6 +17,9 @@ class Command extends IlluminateCommand
 
     protected $description = '生成 用于 JWT第三部分 signature 算法加密 所需的密钥';
 
+    /**
+     * @throws \Exception
+     */
     public function handle(): void
     {
         $envPath = $this->laravel->environmentFilePath();
@@ -42,6 +45,9 @@ class Command extends IlluminateCommand
         $this->info('公私钥创建完成');
     }
 
+    /**
+     * 生成 公私钥 用于 Token中的信息加解密
+     */
     private function generate(): void
     {
         $path = dirname(__DIR__,2).'/Sign';

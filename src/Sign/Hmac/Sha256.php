@@ -8,7 +8,6 @@
 
 namespace MiTsuHaAya\JWT\Sign\Hmac;
 
-
 use MiTsuHaAya\JWT\Sign\Contract;
 
 class Sha256 implements Contract

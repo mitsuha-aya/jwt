@@ -12,6 +12,12 @@ use BadMethodCallException;
 
 trait PropertyToMethod
 {
+    /**
+     * 使用 方法的方式 操作 属性
+     * @param string $method
+     * @param array $arguments
+     * @return mixed
+     */
     public function __call(string $method, array $arguments)
     {
         if (!property_exists($this, $method)) {

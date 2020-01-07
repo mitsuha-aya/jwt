@@ -39,7 +39,7 @@ class ServiceProvider extends IlluminateProvider
         $secretAlias = 'mitsuha_aya.jwt.secret';
 
         // 容器中 增加单例
-        $this->app->singleton($secretAlias,function(){
+        $this->app->singleton($secretAlias,static function(){
             return new Command();
         });
 
