@@ -55,13 +55,41 @@ return [
     */
     'secret' => env('MITSUHA_AYA_JWT_SECRET','4bmCusDruVG6N7ZMAE2eu3c7NrUaHQ6VZCL6vqMU6SGWGIvYOoRlHtHp1UadXaLG'),
 
-    'redis' => [
-        'host' => env('REDIS_HOST', '127.0.0.1'),
-        'password' => env('REDIS_PASSWORD', null),
-        'port' => env('REDIS_PORT', 6379),
-        'database' => env('REDIS_DB', 3),
-        'options' => [
-            'prefix' => env('APP_NAME') ? env('APP_NAME').':ma_jwt:' : 'ma_jwt:'
-        ],
+    /*
+    |--------------------------------------------------------------------------
+    | 存储方式
+    |--------------------------------------------------------------------------
+    |
+    | Token黑名单需要通过某个方式去存储
+    | 默认使用 redis的3号数据库
+    |
+    */
+
+    'store' => [
+        'default' => env('MA_JWT_STORE','redis'),
+
+        'connections' => [
+
+            'redis' => [
+                'host' => env('REDIS_HOST', '127.0.0.1'),
+                'password' => env('REDIS_PASSWORD', null),
+                'port' => env('REDIS_PORT', 6379),
+                'database' => env('REDIS_DB', 3),
+                'options' => [
+                    'prefix' => env('APP_NAME') ? env('APP_NAME').':ma_jwt:' : 'ma_jwt:'
+                ],
+            ],
+
+            'db' => [
+                'host' => '127.0.0.1',
+                'password' => '',
+                'port' => 3306,
+                'database' => env('DB_DATABASE', 'forge'),
+                'table' => env('MA_JWT_STORE_DB_TABLE', 'ma_jwt')
+            ],
+
+        ]
+
     ],
+
 ];

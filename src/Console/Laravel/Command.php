@@ -58,6 +58,9 @@ class Command extends IlluminateCommand
             'private_key_type' => OPENSSL_KEYTYPE_RSA,
         );
 
+        @unlink($path.'/rsa_sha512_private.pem');
+        @unlink($path.'/rsa_sha512_public.pem');
+
         $privateKeyResource = openssl_pkey_new($config);  // 根据配置 生成一个 私钥的资源对象
         openssl_pkey_export_to_file($privateKeyResource,$path.'/rsa_sha512_private.pem'); // 将 私钥资源里的 私钥 转换成字符串 并导出文件
         $publicKeyInfo = openssl_pkey_get_details($privateKeyResource);   // 从 私钥中 获取 公钥的所有相关信息

@@ -11,12 +11,14 @@ namespace MiTsuHaAya\JWT\Console\Laravel;
 use Illuminate\Redis\RedisManager;
 use Illuminate\Support\ServiceProvider as IlluminateProvider;
 use MiTsuHaAya\JWT\Config\Application as ConfigApp;
-use MiTsuHaAya\JWT\TokenFacade;
+use MiTsuHaAya\JWT\Store\Application as StoreApp;
+use MiTsuHaAya\JWT\Store\Connections\PhpRedis;
 
 class ServiceProvider extends IlluminateProvider
 {
     /**
      * 注册 和 初始化
+     * @throws \Illuminate\Contracts\Container\BindingResolutionException
      */
     public function register(): void
     {
@@ -28,7 +30,7 @@ class ServiceProvider extends IlluminateProvider
         $privateKey = dirname(__DIR__,2).'/Config/rsa_sha512_private.pem';
         ConfigApp::init($config,$publicKey,$privateKey);   // 初始化 config信息
 
-        $this->initRedis($config['redis']);  // 初始化 redis信息
+        $this->initStore($config['redis']);  // 初始化 store (使用redis)
     }
 
     /**
@@ -50,6 +52,7 @@ class ServiceProvider extends IlluminateProvider
     /**
      * 注册 config.php 的 发布配置
      * @return array
+     * @throws \Illuminate\Contracts\Container\BindingResolutionException
      */
     private function publishConfig(): array
     {
@@ -62,18 +65,20 @@ class ServiceProvider extends IlluminateProvider
         // 每次启动时 将 发布后的 config 覆盖 自己的config
         $this->mergeConfigFrom($configPath, $publishConfigName);
 
-        return $this->app->get($publishConfigName) ?: file_get_contents($configPath);  // Laravel框架的 辅助函数
+        return $this->app->make('config')->get($publishConfigName) ?: require $configPath;
     }
 
     /**
-     * 初始化redis 至 TokenFacade中
+     * 初始化redis 至 Store Application中
      * @param $redisConfig
+     * @throws \Illuminate\Contracts\Container\BindingResolutionException
      */
-    private function initRedis($redisConfig): void
+    private function initStore($redisConfig): void
     {
-        if(isset($this->app['redis'])){
+        // 如果 redis的 ServiceProvider 已经跑过 就使用已经绑定的
+        if($this->app->bound('redis')){
             /** @var RedisManager $redis */
-            $redisManager = $this->app['redis'];
+            $redisManager = $this->app->make('redis');
         }else{
             $options = $redisConfig['options'];
             unset($redisConfig['options']);
@@ -87,7 +92,13 @@ class ServiceProvider extends IlluminateProvider
             $redisManager = new RedisManager($this->app,'phpredis', $redisConfig);
         }
 
-        TokenFacade::$redis = $redisManager->connection('ma_jwt');      // 初始化 redis
+        $redis = $redisManager->connection('ma_jwt');      // 初始化 redis
+
+        $store = new PhpRedis();
+        $store->redis = $redis;
+
+        $storeApp = new StoreApp();
+        $storeApp::$store = $store;
     }
 
 }

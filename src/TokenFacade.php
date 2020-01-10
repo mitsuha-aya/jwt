@@ -8,18 +8,30 @@
 
 namespace MiTsuHaAya\JWT;
 
-use Illuminate\Redis\Connections\Connection;
-use Illuminate\Redis\Connections\PhpRedisConnection;
-use Illuminate\Redis\Connectors\PhpRedisConnector;
-use Illuminate\Support\ConfigurationUrlParser;
-use MiTsuHaAya\JWT\Config\Application as ConfigApp;
 use MiTsuHaAya\JWT\Exceptions\TokenLackPrimaryKey;
 use MiTsuHaAya\JWT\Sign\Application as SignApp;
 
 class TokenFacade
 {
-    /** @var PhpRedisConnection $redis */
-    public static $redis;
+    /** @var Token $token */
+    public static $token;
+    /** @var SignApp $signApp */
+    public static $signApp;
+
+    /**
+     * 初始化依赖类
+     */
+    public static function init(): void
+    {
+        if(! static::$token instanceof Token){
+            static::$token = new Token();
+        }
+
+        if(! static::$signApp instanceof SignApp){
+            static::$signApp = new SignApp();
+        }
+
+    }
 
     /**
      * 根据 主键 生成 Token
@@ -30,12 +42,11 @@ class TokenFacade
      */
     public static function onPrimaryKey($id): string
     {
-        $token = new Token();
-        $signApp = new SignApp();
+        static::init();
 
-        $token->payload['jti'] = $signApp->encode($id);    // 使用 主键 作为 本次token的 jwt id
+        static::$token->payload['jti'] = static::$signApp->encode($id);    // 使用 主键 作为 本次token的 jwt id
 
-        return $token->make();
+        return static::$token->make();
     }
 
     /**
@@ -49,6 +60,8 @@ class TokenFacade
      */
     public static function onModel(object $model,$key = null): string
     {
+        static::init();
+
         switch (gettype($key)){
             /** @noinspection PhpMissingBreakStatementInspection */
             case null:
@@ -68,40 +81,26 @@ class TokenFacade
             throw new TokenLackPrimaryKey('无法从模型中获取主键:'.$key);
         }
 
-        $token = new Token();
-        $signApp = new SignApp();
+        static::$token->payload['jti'] = static::$signApp->encode($id);    // 使用 主键 作为 本次token的 jwt id
+        static::$token->payload['sub'] = static::$signApp->encode(get_class($model)); // 使用 类型作为 本次token的 主题
 
-        $token->payload['jti'] = $signApp->encode($id);    // 使用 主键 作为 本次token的 jwt id
-        $token->payload['sub'] = $signApp->encode(get_class($model)); // 使用 类型作为 本次token的 主题
-
-        return $token->make();
+        return static::$token->make();
     }
 
     /**
-     * 获取 redis 实例
-     * @return Connection
+     * 解析Token字符串
+     * @param $tokenString
+     * @return Token
+     * @throws Exceptions\HashNotSupport
+     * @throws Exceptions\OpensslDecryptFail
+     * @throws Exceptions\SignatureIllegal
+     * @throws Exceptions\TokenCannotParsed
      */
-    public static function redis(): Connection
+    public static function parse($tokenString): Token
     {
-        if(! static::$redis instanceof Connection){
-            $redisConfig = ConfigApp::get('redis');
+        static::init();
 
-            $options = $redisConfig['options'] ?? [];
-            unset($redisConfig['options']);
-
-            $parsed = (new ConfigurationUrlParser)->parseConfiguration($redisConfig);
-
-            $redisConfig = array_filter($parsed,static function ($key) {
-                return ! in_array($key, ['driver', 'username'], true);
-            }, ARRAY_FILTER_USE_KEY);
-
-            // 默认使用 phpRedis
-            $phpRedis = (new PhpRedisConnector)->connect($redisConfig,$options);
-
-            static::$redis = $phpRedis;
-        }
-
-        return static::$redis;
+        return static::$token->parse($tokenString);
     }
-    
+
 }

@@ -3,13 +3,15 @@
     "description": "jwt插件包",
     "license": "proprietary",
     "keywords": [
+        "mitsuha_aya",
         "JWT",
         "json web token"
     ],
     "authors": [
         {
             "name": "mitsuha aya",
-            "email": "1150527016@qq.com"
+            "email": "1150527016@qq.com",
+            "role": "Developer"
         }
     ],
     "require": {

@@ -3,9 +3,11 @@
 namespace MiTsuHaAya\JWT;
 
 use Illuminate\Support\Carbon;
+use MiTsuHaAya\JWT\Exceptions\DisableError;
 use MiTsuHaAya\JWT\Exceptions\SignatureIllegal;
 use MiTsuHaAya\JWT\Exceptions\TokenCannotParsed;
 use MiTsuHaAya\JWT\Sign\Application as SignApp;
+use MiTsuHaAya\JWT\Store\Application as StoreApp;
 use MiTsuHaAya\JWT\Traits\PropertyToMethod;
 use MiTsuHaAya\JWT\Config\Application as ConfigApp;
 
@@ -18,11 +20,13 @@ class Token
 {
     use PropertyToMethod;
 
+    // 本次生成 或 解析的 Token 的 第一部分
     public $header = [
         'alg' => '',                // Token加密算法
         'type' => 'JWT'             // Token类型，规范决定只能是JWT
     ];
 
+    // 本次生成 或 解析的 Token 的 第二部分
     public $payload = [
         'iss' => '',                // issuer 签发人              【后台项目名或域名】
         'exp' => '',                // expiration time 过期时间
@@ -33,10 +37,21 @@ class Token
         'jti' => ''                 // JWT ID 编号
     ];
 
+    // 本次生成 或 解析的 Token 的 第三部分
     public $signature;
-
+    // 本次生成 或 解析的 Token
+    public $tokenString;
+    // Token有效期、Token刷新期、Token有效期的偏移值
     public $ttl,$refreshTtl,$leeway;
 
+    public $disable = [
+        'forever' => 'forever_disable_token',
+        'transiency_prefix' => 'disable_token:'
+    ];
+
+    /**
+     * Token constructor.
+     */
     public function __construct()
     {
         $this->init();
@@ -87,6 +102,7 @@ class Token
             $payload['sub'] = $signApp->decode($payload['sub']);
         }
 
+        $this->tokenString = $tokenString;
         $this->header = $header;
         $this->payload = $payload;
         $this->signature = $signature;
@@ -127,15 +143,65 @@ class Token
     }
 
     /**
+     * 禁用当前Token
+     * @param null $ttl
+     * @return bool
+     * @throws DisableError
+     */
+    public function disable($ttl = null): bool
+    {
+        if(!$this->signature){
+            throw new DisableError('当前类并没有任何token可供使用');
+        }
+
+        $storeApp = new StoreApp();
+
+        $now = Carbon::now();
+
+        if(empty($this->payload['exp'])){
+            if(! $storeApp->take($this->disable['forever'],$this->signature)){
+                $storeApp->add($this->disable['forever'],$this->signature,$now->toDateTimeString());
+            }
+        }else{
+            if(!$ttl){
+                $timestamp = Carbon::parse($this->payload['exp'])->timestamp;
+                $ttl = $timestamp - time();
+            }
+
+            if($ttl > 0 && ! $storeApp->get($this->disable['transiency_prefix'].$this->signature) ){
+                $storeApp->set($this->disable['transiency_prefix'].$this->signature,$now->toDateTimeString(),$ttl);
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * 检测Token是否有效
      * @param null $payload
+     * @param null $signature
      * @return bool
      */
-    public function isValid($payload = null): bool
+    public function isValid($payload = null,$signature = null): bool
     {
         $payload = $payload ?: $this->payload;
+        $signature = $signature ?: $this->signature;
 
-        return $this->checkTime($payload);
+        if(!$this->checkTime($payload)){
+            return false;
+        }
+
+        $storeApp = new StoreApp();
+        // 是否在 永久禁用
+        if($storeApp->take($this->disable['forever'],$signature)){
+            return false;
+        }
+        // 是否 短暂禁用
+        if($storeApp->get($this->disable['transiency_prefix'].$signature)){
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -168,21 +234,22 @@ class Token
         $signApp = new SignApp();
         $this->signature = $signApp->sign($this->header['alg'],$header.'.'.$payload);
 
-        return $header.'.'.$payload.'.'.$this->signature;
+        return $this->tokenString = $header.'.'.$payload.'.'.$this->signature;
     }
 
     /**
      * 给payload增加时间信息
      * @param array $payload
+     * @param Carbon|null $carbon
      * @return array
      */
-    public function addTimeInfo(array $payload): array
+    public function addTimeInfo(array $payload,Carbon $carbon = null): array
     {
-        $now = Carbon::now();
+        $carbon = $carbon instanceof Carbon ? $carbon : Carbon::now();
 
-        $payload['iat'] = $now->toDateTimeString();
-        $payload['nbf'] = $now->toDateTimeString();
-        $payload['exp'] = $now->addSeconds($this->ttl)->toDateTimeString();
+        $payload['iat'] = $carbon->toDateTimeString();
+        $payload['nbf'] = $carbon->toDateTimeString();
+        $payload['exp'] = $carbon->addSeconds($this->ttl)->toDateTimeString();
 
         return $payload;
     }

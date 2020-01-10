@@ -14,10 +14,6 @@ use MiTsuHaAya\JWT\Exceptions\OpensslEncryptFail;
 use MiTsuHaAya\JWT\Sign\Hmac\Sha256;
 use MiTsuHaAya\JWT\Config\Application as ConfigApp;
 
-/**
- * Class Application
- * @package MiTsuHaAya\Sign
- */
 class Application
 {
     public $supported = [

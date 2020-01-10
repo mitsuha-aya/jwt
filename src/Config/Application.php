@@ -8,6 +8,8 @@
 
 namespace MiTsuHaAya\JWT\Config;
 
+use Illuminate\Support\Arr;
+
 class Application
 {
     public static $config = [];
@@ -57,12 +59,12 @@ class Application
      * 获取config
      * @param $key
      * @param null $default
-     * @return mixed|null
+     * @return mixed
      */
     public static function get($key,$default = null)
     {
         static::checkInit();
-        return static::$config[$key] ?? $default;
+        return  Arr::get(static::$config,$key,$default);
     }
 
     /**
