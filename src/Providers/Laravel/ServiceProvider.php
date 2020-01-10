@@ -30,7 +30,10 @@ class ServiceProvider extends IlluminateProvider
         $privateKey = dirname(__DIR__,2).'/Config/rsa_sha512_private.pem';
         ConfigApp::init($config,$publicKey,$privateKey);   // 初始化 config信息
 
-        $this->initStore($config['redis']);  // 初始化 store (使用redis)
+        $storeConfig = $config['store']['default'];
+        $storeConfig = $config['connections'][$storeConfig];
+
+        $this->initStore($storeConfig);  // 初始化 store (使用redis)
     }
 
     /**
