@@ -6,7 +6,7 @@
  * Time: 15:30
  */
 
-namespace MiTsuHaAya\JWT\Console\Laravel;
+namespace MiTsuHaAya\JWT\Providers\Laravel;
 
 use Illuminate\Redis\RedisManager;
 use Illuminate\Support\ServiceProvider as IlluminateProvider;

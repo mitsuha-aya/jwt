@@ -6,7 +6,7 @@
  * Time: 9:54
  */
 
-namespace MiTsuHaAya\JWT\Console\Laravel;
+namespace MiTsuHaAya\JWT\Providers\Laravel;
 
 use Illuminate\Console\Command as IlluminateCommand;
 use Illuminate\Support\Str;
