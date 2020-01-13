@@ -15,19 +15,23 @@ use MiTsuHaAya\JWT\Config\Application as ConfigApp;
  * @method mixed header($key = null,$value = null)
  * @method mixed payload($key = null,$value = null)
  * @method string|null signature()
+ * @method string|null tokenString()
+ * @method string|null ttl()
+ * @method string|null refreshTtl()
+ * @method string|null leeway()
  */
 class Token
 {
     use PropertyToMethod;
 
     // 本次生成 或 解析的 Token 的 第一部分
-    public $header = [
+    private $header = [
         'alg' => '',                // Token加密算法
         'type' => 'JWT'             // Token类型，规范决定只能是JWT
     ];
 
     // 本次生成 或 解析的 Token 的 第二部分
-    public $payload = [
+    private $payload = [
         'iss' => '',                // issuer 签发人              【后台项目名或域名】
         'exp' => '',                // expiration time 过期时间
         'sub' => '',                // subject 主题               【用户类型】
@@ -38,13 +42,14 @@ class Token
     ];
 
     // 本次生成 或 解析的 Token 的 第三部分
-    public $signature;
+    private $signature;
     // 本次生成 或 解析的 Token
-    public $tokenString;
+    private $tokenString;
     // Token有效期、Token刷新期、Token有效期的偏移值
-    public $ttl,$refreshTtl,$leeway;
+    private $ttl,$refreshTtl,$leeway;
 
-    public $disable = [
+    // redis key
+    private $disableKey = [
         'forever' => 'forever_disable_token',
         'transiency_prefix' => 'disable_token:'
     ];
@@ -61,7 +66,7 @@ class Token
      * 初始化Token配置
      * @return Token
      */
-    public function init(): Token
+    private function init(): Token
     {
         $this->header['alg'] = ConfigApp::get('alg');
         $this->ttl = ConfigApp::get('ttl');
@@ -120,7 +125,7 @@ class Token
      * @throws SignatureIllegal
      * @throws TokenCannotParsed
      */
-    public function checkBasics(array $header,array $payload,string $signature): bool
+    private function checkBasics(array $header,array $payload,string $signature): bool
     {
         if(!isset($header['alg'], $header['type'])){
             throw new TokenCannotParsed('Token header 解析后缺少必要参数');
@@ -132,8 +137,10 @@ class Token
             throw new TokenCannotParsed('Token payload 解析后缺少必要参数');
         }
 
-        $nowSignature = (new SignApp())->sign($header['alg'],
-            $this->encode($header).'.'.$this->encode($payload));
+        $nowSignature = (new SignApp())->sign(
+            $header['alg'],
+            $this->encode($header).'.'.$this->encode($payload)
+        );
 
         if($nowSignature !== $signature){
             throw new SignatureIllegal('Token signature 解析后不正确');
@@ -159,8 +166,8 @@ class Token
         $now = Carbon::now();
 
         if(empty($this->payload['exp'])){
-            if(! $storeApp->take($this->disable['forever'],$this->signature)){
-                $storeApp->add($this->disable['forever'],$this->signature,$now->toDateTimeString());
+            if(! $storeApp->take($this->disableKey['forever'],$this->signature)){
+                $storeApp->add($this->disableKey['forever'],$this->signature,$now->toDateTimeString());
             }
         }else{
             if(!$ttl){
@@ -168,8 +175,8 @@ class Token
                 $ttl = $timestamp - time();
             }
 
-            if($ttl > 0 && ! $storeApp->get($this->disable['transiency_prefix'].$this->signature) ){
-                $storeApp->set($this->disable['transiency_prefix'].$this->signature,$now->toDateTimeString(),$ttl);
+            if($ttl > 0 && ! $storeApp->get($this->disableKey['transiency_prefix'].$this->signature) ){
+                $storeApp->set($this->disableKey['transiency_prefix'].$this->signature,$now->toDateTimeString(),$ttl);
             }
         }
 
@@ -187,17 +194,13 @@ class Token
         $payload = $payload ?: $this->payload;
         $signature = $signature ?: $this->signature;
 
-        if(!$this->checkTime($payload)){
+        if(! $this->checkTime($payload)){
             return false;
         }
-
-        $storeApp = new StoreApp();
-        // 是否在 永久禁用
-        if($storeApp->take($this->disable['forever'],$signature)){
+        if(! $this->checkForeverDisable($signature)){
             return false;
         }
-        // 是否 短暂禁用
-        if($storeApp->get($this->disable['transiency_prefix'].$signature)){
+        if(! $this->checkTransiencyDisable($signature)){
             return false;
         }
 
@@ -216,6 +219,34 @@ class Token
         $now = Carbon::now()->toDateTimeString();
 
         return $now > $payload['nbf'] && $now < $payload['exp'];
+    }
+
+    /**
+     * 检测是否 永久禁用
+     * @param $signature
+     * @return bool
+     */
+    public function checkForeverDisable($signature = null): bool
+    {
+        $signature = $signature ?: $this->signature;
+
+        $storeApp = new StoreApp();
+
+        return (bool) $storeApp->take($this->disableKey['forever'],$signature);
+    }
+
+    /**
+     * 检测是否 永久禁用
+     * @param $signature
+     * @return bool
+     */
+    public function checkTransiencyDisable($signature = null): bool
+    {
+        $signature = $signature ?: $this->signature;
+
+        $storeApp = new StoreApp();
+
+        return (bool) $storeApp->get($this->disableKey['transiency_prefix'].$signature);
     }
 
     /**
@@ -243,7 +274,7 @@ class Token
      * @param Carbon|null $carbon
      * @return array
      */
-    public function addTimeInfo(array $payload,Carbon $carbon = null): array
+    private function addTimeInfo(array $payload,Carbon $carbon = null): array
     {
         $carbon = $carbon instanceof Carbon ? $carbon : Carbon::now();
 
@@ -259,7 +290,7 @@ class Token
      * @param array $data
      * @return string
      */
-    public function encode(array $data): string
+    private function encode(array $data): string
     {
         $encode = json_encode($data);
         return $this->base64UrlEncode($encode);
@@ -270,7 +301,7 @@ class Token
      * @param string $encode
      * @return array
      */
-    public function decode(string $encode): array
+    private function decode(string $encode): array
     {
         $data = $this->base64UrlDecode($encode);
         return json_decode($data,true);
@@ -281,7 +312,7 @@ class Token
      * @param $data
      * @return string
      */
-    public function base64UrlEncode($data): string
+    private function base64UrlEncode($data): string
     {
         $data = base64_encode($data);
         return str_replace(['=', '+','/'], ['','-','_'], $data);
@@ -292,7 +323,7 @@ class Token
      * @param string $encode
      * @return bool|string
      */
-    public function base64UrlDecode(string $encode)
+    private function base64UrlDecode(string $encode)
     {
         $encode = str_replace( ['','-','_'],['=', '+','/'], $encode);
         return base64_decode($encode);

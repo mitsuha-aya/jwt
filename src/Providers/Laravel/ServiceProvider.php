@@ -8,6 +8,8 @@
 
 namespace MiTsuHaAya\JWT\Providers\Laravel;
 
+use Illuminate\Redis\Connections\Connection;
+use Illuminate\Redis\Connections\PhpRedisConnection;
 use Illuminate\Redis\RedisManager;
 use Illuminate\Support\ServiceProvider as IlluminateProvider;
 use MiTsuHaAya\JWT\Config\Application as ConfigApp;
@@ -24,16 +26,19 @@ class ServiceProvider extends IlluminateProvider
     {
         $this->artisanSecret();    // 注册 生成 密钥的 Artisan命令
 
-        $config = $this->publishConfig();    // 注册 config.php 的 发布配置 并返回最新的 config
+        $publishConfigName = 'ma_jwt';  // 发布后的config 的名称
+
+        $config = $this->publishConfig($publishConfigName); // 注册 config.php 的 发布配置 并返回最新的 config
 
         $publicKey = dirname(__DIR__,2).'/Config/rsa_sha512_public.pem';
         $privateKey = dirname(__DIR__,2).'/Config/rsa_sha512_private.pem';
         ConfigApp::init($config,$publicKey,$privateKey);   // 初始化 config信息
 
-        $storeConfig = $config['store']['default'];
-        $storeConfig = $config['connections'][$storeConfig];
+        $store = $config['store']['default'];
+        if($store === 'redis'){
+            $this->initRedisStore($config['store']['connections']['redis']);  // 初始化 store (使用redis)
+        }
 
-        $this->initStore($storeConfig);  // 初始化 store (使用redis)
     }
 
     /**
@@ -54,13 +59,12 @@ class ServiceProvider extends IlluminateProvider
 
     /**
      * 注册 config.php 的 发布配置
+     * @param $publishConfigName
      * @return array
      * @throws \Illuminate\Contracts\Container\BindingResolutionException
      */
-    private function publishConfig(): array
+    private function publishConfig($publishConfigName): array
     {
-        $publishConfigName = 'ma_jwt';  // 发布后的config 的名称
-
         $configPath = dirname(__DIR__, 2) . '/Config/default.php';    // 找到 default.php
 
         $this->publishes([$configPath => $this->app->configPath("$publishConfigName.php")], 'config');
@@ -74,34 +78,46 @@ class ServiceProvider extends IlluminateProvider
     /**
      * 初始化redis 至 Store Application中
      * @param $redisConfig
-     * @throws \Illuminate\Contracts\Container\BindingResolutionException
      */
-    private function initStore($redisConfig): void
+    private function initRedisStore($redisConfig): void
     {
-        // 如果 redis的 ServiceProvider 已经跑过 就使用已经绑定的
-        if($this->app->bound('redis')){
-            /** @var RedisManager $redis */
-            $redisManager = $this->app->make('redis');
-        }else{
-            $options = $redisConfig['options'];
-            unset($redisConfig['options']);
+        // 使用闭包可以保证 在执行的时候 redis实例 可以解析成 RedisManager
+        StoreApp::$initCallable = function() use ($redisConfig){
+            $redisManager = $this->app['redis'];
 
-            $redisConfig = [
-                'client' => 'phpredis',
-                'ma_jwt' => $redisConfig,
-                'options' => $options
-            ];
+            if(
+                ! $redisManager instanceof RedisManager
+                || ! ($redis = $redisManager->connection() ) instanceof PhpRedisConnection
+            )
+            {
+                $redis = $this->defaultRedisStore($redisConfig);
+            }
 
-            $redisManager = new RedisManager($this->app,'phpredis', $redisConfig);
-        }
+            /** @var PhpRedisConnection $redis */
 
-        $redis = $redisManager->connection('ma_jwt');      // 初始化 redis
+            return (new PhpRedis())->setInstance($redis);
+        };
+    }
 
-        $store = new PhpRedis();
-        $store->redis = $redis;
+    /**
+     * 默认的 RedisManager实例化
+     * @param $redisConfig
+     * @return Connection
+     */
+    private function defaultRedisStore($redisConfig): Connection
+    {
+        $options = $redisConfig['options'];
+        unset($redisConfig['options']);
 
-        $storeApp = new StoreApp();
-        $storeApp::$store = $store;
+        $redisConfig = [
+            'client' => 'phpredis',
+            'ma_jwt' => $redisConfig,
+            'options' => $options
+        ];
+
+        $redisManager = new RedisManager($this->app,'phpredis', $redisConfig);
+
+        return $redisManager->connection('ma_jwt');
     }
 
 }

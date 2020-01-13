@@ -21,7 +21,7 @@ class Application
     ];
 
     /** @var Contract $signer */
-    public $signer;
+    private $signer;
 
     /**
      * 进行加密
@@ -37,7 +37,11 @@ class Application
         }
 
         $class = $this->supported[$alg];
-        $this->signer = new $class();
+
+        if(get_class($this->signer) !== $class){
+            $this->signer = new $class();
+        }
+
         return $this->signer->encode($string,$this->secret());
     }
 
@@ -45,7 +49,7 @@ class Application
      * 获取用于算法加密的密钥
      * @return string
      */
-    public function secret(): string
+    private function secret(): string
     {
         return ConfigApp::get('secret');
     }

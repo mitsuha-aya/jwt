@@ -8,7 +8,9 @@
 
 namespace MiTsuHaAya\JWT\Store;
 
+use Closure;
 use BadMethodCallException;
+use MiTsuHaAya\JWT\Exceptions\StoreInitError;
 use MiTsuHaAya\JWT\Exceptions\StoreNotSupport;
 use MiTsuHaAya\JWT\Store\Connections\PhpRedis;
 use MiTsuHaAya\JWT\Config\Application as ConfigApp;
@@ -23,37 +25,74 @@ use MiTsuHaAya\JWT\Config\Application as ConfigApp;
  */
 class Application
 {
-    public $supported = [
+    private $supported = [
         'redis' => PhpRedis::class
     ];
 
+    /** @var Closure $initCallable */
+    public static $initCallable;
+
     /** @var Contract $store */
-    public static $store;
+    private static $store;
+
+    /**
+     * 检测是否需要初始化 (进行初始化操作)
+     * @throws StoreInitError
+     * @throws StoreNotSupport
+     */
+    private function checkInit(): void
+    {
+        if(! static::$store instanceof Contract){
+            $this->init();
+        }
+    }
 
     /**
      * 进行初始化
      * @param string $store
      * @return Application
+     * @throws StoreInitError
      * @throws StoreNotSupport
      */
     public function init($store = 'default'): Application
     {
-        if(!static::$store instanceof Contract){
+        $connection = ConfigApp::get("store.$store");
 
-            $connection = ConfigApp::get("store.$store");
-            if( !$connection || empty($this->supported[$connection]) ){
-                throw new StoreNotSupport('暂不支持该存储方式：'.$store);
-            }
+        if( !$connection || empty($this->supported[$connection]) ){
+            throw new StoreNotSupport('暂不支持该存储方式：'.$store);
+        }
 
-            $config = ConfigApp::get("store.connections.$connection");
+        $config = ConfigApp::get("store.connections.$connection");
 
+        $this::$initCallable = $this::$initCallable instanceof Closure
+            ? $this::$initCallable
+            : $this->defaultInitStore($connection,$config);
+
+        $instance = $this::$initCallable();
+
+        if(! $instance instanceof Contract){
+            throw new StoreInitError('$initCallable 的执行结果必须实现 MiTsuHaAya\JWT\Store\Contract接口');
+        }
+
+        static::$store = $instance;
+
+        return $this;
+    }
+
+    /**
+     * 默认的 Store初始化
+     * @param $connection
+     * @param $config
+     * @return callable
+     */
+    private function defaultInitStore($connection,$config): callable
+    {
+        return function() use ($connection,$config){
             $class = $this->supported[$connection];
             /** @var Contract $realize */
             $realize = new $class;
             static::$store = $realize->init($config);
-        }
-
-        return $this;
+        };
     }
 
     /**
@@ -61,10 +100,11 @@ class Application
      * @param $arguments
      * @return mixed
      * @throws StoreNotSupport
+     * @throws StoreInitError
      */
     public function __call($method,$arguments)
     {
-        $this->init();
+        $this->checkInit();
         try{
             return static::$store->$method(...$arguments);
         }catch (BadMethodCallException $exception){

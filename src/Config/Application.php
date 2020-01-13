@@ -33,7 +33,7 @@ class Application
     /**
      * 检测是否初始化，否则使用默认配置
      */
-    public static function checkInit(): void
+    private static function checkInit(): void
     {
         if(static::$isInit === false){
             $config = require __DIR__.'/default.php';

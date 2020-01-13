@@ -16,7 +16,7 @@ use MiTsuHaAya\JWT\Store\Contract;
 class PhpRedis implements Contract
 {
     /** @var PhpRedisConnection */
-    public $redis;
+    private $redis;
 
     /**
      * 返回 redis实例
@@ -34,11 +34,21 @@ class PhpRedis implements Contract
             return ! in_array($key, ['driver', 'username'], true);
         }, ARRAY_FILTER_USE_KEY);
 
-        $this->redis = (new PhpRedisConnector)->connect($redisConfig,$options);
+        $this->setInstance( (new PhpRedisConnector)->connect($redisConfig,$options) );
 
         return $this;
     }
 
+    /**
+     * 保存实例
+     * @param PhpRedisConnection $connector
+     * @return PhpRedisConnection
+     */
+    public function setInstance(PhpRedisConnection $connector): PhpRedisConnection
+    {
+        return $this->redis = $connector;
+    }
+    
     public function set($key,$value,$ttl = null)
     {
         if($ttl){

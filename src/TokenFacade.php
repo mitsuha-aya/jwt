@@ -21,7 +21,7 @@ class TokenFacade
     /**
      * 初始化依赖类
      */
-    public static function init(): void
+    private static function init(): void
     {
         if(! static::$token instanceof Token){
             static::$token = new Token();
@@ -44,7 +44,7 @@ class TokenFacade
     {
         static::init();
 
-        static::$token->payload['jti'] = static::$signApp->encode($id);    // 使用 主键 作为 本次token的 jwt id
+        static::$token->payload('jti',static::$signApp->encode($id));    // 使用 主键 作为 本次token的 jwt id
 
         return static::$token->make();
     }
@@ -81,8 +81,10 @@ class TokenFacade
             throw new TokenLackPrimaryKey('无法从模型中获取主键:'.$key);
         }
 
-        static::$token->payload['jti'] = static::$signApp->encode($id);    // 使用 主键 作为 本次token的 jwt id
-        static::$token->payload['sub'] = static::$signApp->encode(get_class($model)); // 使用 类型作为 本次token的 主题
+        // 使用 主键 作为 本次token的 jwt id
+        static::$token->payload('jti',static::$signApp->encode($id));
+        // 使用 类名 作为 本次token的 主题
+        static::$token->payload('sub',static::$signApp->encode(get_class($model)));
 
         return static::$token->make();
     }
