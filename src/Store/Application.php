@@ -64,11 +64,11 @@ class Application
 
         $config = ConfigApp::get("store.connections.$connection");
 
-        $this::$initCallable = $this::$initCallable instanceof Closure
-            ? $this::$initCallable
+        static::$initCallable = static::$initCallable instanceof Closure
+            ? static::$initCallable
             : $this->defaultInitStore($connection,$config);
 
-        $instance = $this::$initCallable();
+        $instance = (static::$initCallable)();
 
         if(! $instance instanceof Contract){
             throw new StoreInitError('$initCallable 的执行结果必须实现 MiTsuHaAya\JWT\Store\Contract接口');
