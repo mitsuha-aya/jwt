@@ -14,7 +14,7 @@ large_client_header_buffers 4 4k
 
 所有 env中的值 均以 ： `MITSUHA_AYA_`  为前缀 
 
-所有 控制台命令 均已 : `mitsuha_aya:` 为前缀
+所有 控制台命令 均已 : `ma-` 为前缀
 
 所有 简写 均为 : `ma` 为前缀
 

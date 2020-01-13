@@ -13,7 +13,7 @@ use Illuminate\Support\Str;
 
 class Command extends IlluminateCommand
 {
-    protected $signature = 'mitsuha_aya:jwt:secret';
+    protected $signature = 'ma-jwt:secret';
 
     protected $description = '生成 用于 JWT第三部分 signature 算法加密 所需的密钥';
 
