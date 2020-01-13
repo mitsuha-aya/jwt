@@ -38,7 +38,7 @@ class Application
 
         $class = $this->supported[$alg];
 
-        if(get_class($this->signer) !== $class){
+        if($this->signer === null || get_class($this->signer) !== $class){
             $this->signer = new $class();
         }
 
