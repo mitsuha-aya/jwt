@@ -76,6 +76,7 @@ return [
                 'port' => env('REDIS_PORT', 6379),
                 'database' => env('REDIS_DB', 3),
                 'options' => [
+                    // Token的 key前缀
                     'prefix' => env('APP_NAME') ? env('APP_NAME').':ma_jwt:' : 'ma_jwt:'
                 ],
             ],
@@ -85,7 +86,7 @@ return [
                 'password' => '',
                 'port' => 3306,
                 'database' => env('DB_DATABASE', 'forge'),
-                'table' => env('MA_JWT_STORE_DB_TABLE', 'ma_jwt')
+                'table' => env('MA_JWT_STORE_DB_TABLE', 'ma_jwt'),
             ],
 
         ]

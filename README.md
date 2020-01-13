@@ -19,7 +19,7 @@ large_client_header_buffers 4 4k
 所有 简写 均为 : `ma` 为前缀
 
 
-illuminate/support ： laravel支持的 ServiceProvider <br>
-illuminate/console ： laravel支持的 Artisan Command <br>
+illuminate/support ： ServiceProvider、Arr <br>
+illuminate/console ： laravel的 Artisan Command <br>
 vlucas/phpdotenv ： env函数
-illuminate/redis ： 使用 PhpRedis 存储Token信息
+illuminate/redis ： PhpRedis

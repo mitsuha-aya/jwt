@@ -33,7 +33,7 @@ class Application
     public static $initCallable;
 
     /** @var Contract $store */
-    private static $store;
+    public static $store;
 
     /**
      * 检测是否需要初始化 (进行初始化操作)
@@ -91,7 +91,7 @@ class Application
             $class = $this->supported[$connection];
             /** @var Contract $realize */
             $realize = new $class;
-            static::$store = $realize->init($config);
+            return $realize->init($config);
         };
     }
 

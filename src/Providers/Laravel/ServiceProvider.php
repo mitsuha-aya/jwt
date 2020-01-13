@@ -90,12 +90,13 @@ class ServiceProvider extends IlluminateProvider
                 || ! ($redis = $redisManager->connection() ) instanceof PhpRedisConnection
             )
             {
+                /** @var PhpRedisConnection $redis */
                 $redis = $this->defaultRedisStore($redisConfig);
             }
 
-            /** @var PhpRedisConnection $redis */
-
-            return (new PhpRedis())->setInstance($redis);
+            $phpRedis = new PhpRedis();
+            $phpRedis->setDatabase($redisConfig['database']);
+            return $phpRedis->setInstance($redis);
         };
     }
 

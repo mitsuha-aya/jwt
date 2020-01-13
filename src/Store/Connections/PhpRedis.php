@@ -19,6 +19,12 @@ class PhpRedis implements Contract
     private $redis;
 
     /**
+     * 数据存放在哪个数据库
+     * @var int $database
+     */
+    private $database;
+
+    /**
      * 返回 redis实例
      * @param $redisConfig
      * @return PhpRedis
@@ -36,6 +42,8 @@ class PhpRedis implements Contract
 
         $this->setInstance( (new PhpRedisConnector)->connect($redisConfig,$options) );
 
+        $this->setDatabase($redisConfig['database']);
+
         return $this;
     }
 
@@ -51,6 +59,8 @@ class PhpRedis implements Contract
     
     public function set($key,$value,$ttl = null)
     {
+        $this->changeDatabase();
+
         if($ttl){
             return $this->redis->set($key,$value,'EX',$ttl);
         }
@@ -59,22 +69,41 @@ class PhpRedis implements Contract
 
     public function get($key,$default = null)
     {
+        $this->changeDatabase();
+
         return $this->redis->get($key) ?: $default;
     }
 
     public function add($arrayKey,$key,$value)
     {
+        $this->changeDatabase();
+
         return $this->redis->hSet($arrayKey,$key,$value);
     }
 
     public function take($arrayKey,$key = null,$default = null)
     {
+        $this->changeDatabase();
+
         if($key){
             return $this->redis->hGet($arrayKey,$key) ?: $default;
         }
         return $this->redis->hGetAll($arrayKey) ?: $default;
     }
 
+    private function changeDatabase($database = null)
+    {
+        $database = $database ?: $this->database;
 
+        $this->redis->select($database);
+
+        return $this;
+    }
+
+    public function setDatabase($database)
+    {
+        $this->database = $database;
+        return $this;
+    }
 
 }
