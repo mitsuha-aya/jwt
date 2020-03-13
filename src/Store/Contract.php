@@ -12,13 +12,6 @@ namespace MiTsuHaAya\JWT\Store;
 interface Contract
 {
     /**
-     * 初始化
-     * @param $config
-     * @return static
-     */
-    public function init($config);
-
-    /**
      * 设置值
      * @param $key
      * @param $value

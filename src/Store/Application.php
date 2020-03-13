@@ -8,12 +8,13 @@
 
 namespace MiTsuHaAya\JWT\Store;
 
-use Closure;
 use BadMethodCallException;
+use Illuminate\Redis\Connections\PhpRedisConnection;
+use Illuminate\Support\Facades\Redis;
+use MiTsuHaAya\JWT\Config\Application as ConfigApp;
 use MiTsuHaAya\JWT\Exceptions\StoreInitError;
 use MiTsuHaAya\JWT\Exceptions\StoreNotSupport;
 use MiTsuHaAya\JWT\Store\Connections\PhpRedis;
-use MiTsuHaAya\JWT\Config\Application as ConfigApp;
 
 /**
  * Class Application
@@ -29,16 +30,13 @@ class Application
         'redis' => PhpRedis::class
     ];
 
-    /** @var Closure $initCallable */
-    public static $initCallable;
-
     /** @var Contract $store */
-    public static $store;
+    private static $store;
 
     /**
      * 检测是否需要初始化 (进行初始化操作)
-     * @throws StoreInitError
      * @throws StoreNotSupport
+     * @throws \MiTsuHaAya\JWT\Exceptions\ConfigNotInit
      */
     private function checkInit(): void
     {
@@ -49,58 +47,59 @@ class Application
 
     /**
      * 进行初始化
-     * @param string $store
      * @return Application
-     * @throws StoreInitError
      * @throws StoreNotSupport
+     * @throws \MiTsuHaAya\JWT\Exceptions\ConfigNotInit
      */
-    public function init($store = 'default'): Application
+    private function init(): Application
     {
-        $connection = ConfigApp::get("store.$store");
+        $defaultConnection = ConfigApp::get('store.default');
 
-        if( !$connection || empty($this->supported[$connection]) ){
-            throw new StoreNotSupport('暂不支持该存储方式：'.$store);
+        if(empty($this->supported[$defaultConnection])){
+            throw new StoreNotSupport('暂不支持 '.$defaultConnection . '存储方式');
         }
 
-        $config = ConfigApp::get("store.connections.$connection");
+        $config = ConfigApp::get("store.connections.$defaultConnection");
 
-        static::$initCallable = static::$initCallable instanceof Closure
-            ? static::$initCallable
-            : $this->defaultInitStore($connection,$config);
-
-        $instance = (static::$initCallable)();
-
-        if(! $instance instanceof Contract){
-            throw new StoreInitError('$initCallable 的执行结果必须实现 MiTsuHaAya\JWT\Store\Contract接口');
+        if(!$config){
+            throw new StoreNotSupport($defaultConnection.'存储方式缺少配置信息');
         }
 
-        static::$store = $instance;
+        $action = $defaultConnection.'Init';
 
-        return $this;
+        $this->$action($defaultConnection,$config);
     }
 
     /**
-     * 默认的 Store初始化
-     * @param $connection
-     * @param $config
-     * @return callable
+     * @param $defaultConnection
+     * @param array $config
+     * @throws StoreInitError
      */
-    private function defaultInitStore($connection,$config): callable
+    private function redisInit($defaultConnection,array $config): void
     {
-        return function() use ($connection,$config){
-            $class = $this->supported[$connection];
-            /** @var Contract $realize */
-            $realize = new $class;
-            return $realize->init($config);
-        };
-    }
+        $redis = Redis::connection();
 
+        if(! $redis instanceof  PhpRedisConnection){
+            throw new StoreInitError('redis store 暂时只支持 phpRedis');
+        }
+
+        $class = $this->supported[$defaultConnection];
+
+        /** @var PhpRedis $instance */
+        $instance = new $class();
+
+        $instance->setInstance($redis);
+        $instance->setDatabase($config['database']);
+
+        static::$store = $instance;
+    }
+    
     /**
      * @param $method
      * @param $arguments
      * @return mixed
      * @throws StoreNotSupport
-     * @throws StoreInitError
+     * @throws \MiTsuHaAya\JWT\Exceptions\ConfigNotInit
      */
     public function __call($method,$arguments)
     {

@@ -33,12 +33,16 @@ class Token
     // 本次生成 或 解析的 Token 的 第二部分
     private $payload = [
         'iss' => '',                // issuer 签发人              【后台项目名或域名】
-        'exp' => '',                // expiration time 过期时间
+
         'sub' => '',                // subject 主题               【用户类型】
         'aud' => '',                // audience 受众              【前台项目名或域名】
-        'nbf' => '',                // Not Before 生效时间
+
         'iat' => '',                // Issued At 签发时间
-        'jti' => ''                 // JWT ID 编号
+        'nbf' => '',                // Not Before 生效时间
+        'exp' => '',                // expiration time 过期时间
+
+        'jti' => '',                // JWT ID 编号
+        'encode' => 0,              // 当前Token的 编号 是否已经加密 (0代表没有 1代表有)
     ];
 
     // 本次生成 或 解析的 Token 的 第三部分
@@ -48,14 +52,11 @@ class Token
     // Token有效期、Token刷新期、Token有效期的偏移值
     private $ttl,$refreshTtl,$leeway;
 
-    // redis key
-    private $disableKey = [
-        'forever' => 'forever_disable_token',
-        'transiency_prefix' => 'disable_token:'
-    ];
+    // 黑名单所需的 key
+    private $disableKeyPrefix = 'disable_token';
 
     /**
-     * Token constructor.
+     * @throws Exceptions\ConfigNotInit
      */
     public function __construct()
     {
@@ -64,9 +65,10 @@ class Token
 
     /**
      * 初始化Token配置
-     * @return Token
+     * @return $this
+     * @throws Exceptions\ConfigNotInit
      */
-    private function init(): Token
+    private function init(): self
     {
         $this->header['alg'] = ConfigApp::get('alg');
         $this->ttl = ConfigApp::get('ttl');
@@ -80,6 +82,7 @@ class Token
      * 解析Token
      * @param string $tokenString
      * @return Token
+     * @throws Exceptions\ConfigNotInit
      * @throws Exceptions\HashNotSupport
      * @throws Exceptions\OpensslDecryptFail
      * @throws SignatureIllegal
@@ -99,88 +102,31 @@ class Token
 
         $this->checkBasics($header,$payload,$signature);
 
-        $signApp = new SignApp();
-        if($payload['jti']){
-            $payload['jti'] = $signApp->decode($payload['jti']);
-        }
-        if($payload['sub']){
-            $payload['sub'] = $signApp->decode($payload['sub']);
+        if($payload['encode']){
+            $signApp = new SignApp();
+            if($payload['jti']){
+                $payload['jti'] = $signApp->decode($payload['jti']);
+            }
+            if($payload['sub']){
+                $payload['sub'] = $signApp->decode($payload['sub']);
+            }
         }
 
-        $this->tokenString = $tokenString;
         $this->header = $header;
         $this->payload = $payload;
         $this->signature = $signature;
+        $this->tokenString = $tokenString;
 
         return $this;
     }
 
     /**
-     * 检测指定的Token三部分是否合法
-     * @param array $header
-     * @param array $payload
-     * @param string $signature
-     * @return bool
-     * @throws Exceptions\HashNotSupport
-     * @throws SignatureIllegal
-     * @throws TokenCannotParsed
+     * 获取当前Token的 编号
+     * @return mixed
      */
-    private function checkBasics(array $header,array $payload,string $signature): bool
+    public function id()
     {
-        if(!isset($header['alg'], $header['type'])){
-            throw new TokenCannotParsed('Token header 解析后缺少必要参数');
-        }
-
-        if(!isset($payload['iss'], $payload['exp'],$payload['sub'],
-            $payload['aud'],$payload['nbf'],$payload['iat'],$payload['jti']))
-        {
-            throw new TokenCannotParsed('Token payload 解析后缺少必要参数');
-        }
-
-        $nowSignature = (new SignApp())->sign(
-            $header['alg'],
-            $this->encode($header).'.'.$this->encode($payload)
-        );
-
-        if($nowSignature !== $signature){
-            throw new SignatureIllegal('Token signature 解析后不正确');
-        }
-
-        return true;
-    }
-
-    /**
-     * 禁用当前Token
-     * @param null $ttl
-     * @return bool
-     * @throws DisableError
-     */
-    public function disable($ttl = null): bool
-    {
-        if(!$this->signature){
-            throw new DisableError('当前类并没有任何token可供使用');
-        }
-
-        $storeApp = new StoreApp();
-
-        $now = Carbon::now();
-
-        if(empty($this->payload['exp'])){
-            if(! $storeApp->take($this->disableKey['forever'],$this->signature)){
-                $storeApp->add($this->disableKey['forever'],$this->signature,$now->toDateTimeString());
-            }
-        }else{
-            if(!$ttl){
-                $timestamp = Carbon::parse($this->payload['exp'])->timestamp;
-                $ttl = $timestamp - time();
-            }
-
-            if($ttl > 0 && ! $storeApp->get($this->disableKey['transiency_prefix'].$this->signature) ){
-                $storeApp->set($this->disableKey['transiency_prefix'].$this->signature,$now->toDateTimeString(),$ttl);
-            }
-        }
-
-        return true;
+        return $this->payload['jti'];
     }
 
     /**
@@ -197,11 +143,94 @@ class Token
         if(! $this->checkTime($payload)){
             return false;
         }
-        if(! $this->checkForeverDisable($signature)){
+
+        if(! $this->checkDisable($signature)){
             return false;
         }
-        if(! $this->checkTransiencyDisable($signature)){
-            return false;
+
+        return true;
+    }
+
+    /**
+     * 禁用当前Token
+     * @return bool
+     * @throws DisableError
+     * @throws Exceptions\ConfigNotInit
+     */
+    public function disable(): bool
+    {
+        if(!$this->tokenString){
+            throw new DisableError('当前类并没有任何token可供使用');
+        }
+
+        if(!ConfigApp::get('blacklist')){
+            throw new DisableError('禁用Token必须先开启 Token黑名单');
+        }
+
+        $storeApp = new StoreApp();
+
+        $timestamp = Carbon::parse($this->payload['exp'])->timestamp;
+        $ttl = $timestamp - time();
+
+        $now = Carbon::now();
+
+        $key = $this->disableKeyPrefix .':'. $this->signature;
+        if($ttl > 0 && !$storeApp->get($key) ){
+            $storeApp->set($key,$now->toDateTimeString(),$ttl);
+        }
+
+        return true;
+    }
+
+    /**
+     * 制作Token
+     * (payload加上时间、生成signature)
+     * @return string
+     * @throws Exceptions\ConfigNotInit
+     * @throws Exceptions\HashNotSupport
+     */
+    public function make(): string
+    {
+        $header = $this->encode($this->header);
+
+        $this->payload = $this->addTimeInfo($this->payload);
+        $payload = $this->encode($this->payload);
+
+        $this->signature = (new SignApp)->sign($this->header['alg'],$header.'.'.$payload);
+
+        return $this->tokenString = $header.'.'.$payload.'.'.$this->signature;
+    }
+
+    /**
+     * 检测指定的Token三部分是否合法
+     * @param array $header
+     * @param array $payload
+     * @param string $signature
+     * @return bool
+     * @throws Exceptions\ConfigNotInit
+     * @throws Exceptions\HashNotSupport
+     * @throws SignatureIllegal
+     * @throws TokenCannotParsed
+     */
+    private function checkBasics(array $header,array $payload,string $signature): bool
+    {
+        if(!isset($header['alg'], $header['type'])){
+            throw new TokenCannotParsed('Token header 解析后缺少必要参数');
+        }
+
+        if(!isset($payload['iss'], $payload['exp'],$payload['sub'],
+            $payload['aud'],$payload['nbf'],$payload['iat'],$payload['jti']))
+        {
+            throw new TokenCannotParsed('Token payload 解析后缺少必要参数');
+        }
+
+        $nowSignature = (new SignApp)->sign(
+            $header['alg'],
+            $this->encode($header).'.'.$this->encode($payload)
+        );
+
+        if($nowSignature !== $signature){
+            throw new SignatureIllegal('Token signature 解析后不正确');
         }
 
         return true;
@@ -212,7 +241,7 @@ class Token
      * @param null $payload
      * @return bool
      */
-    public function checkTime($payload = null): bool
+    private function checkTime($payload = null): bool
     {
         $payload = $payload ?: $this->payload;
 
@@ -222,50 +251,17 @@ class Token
     }
 
     /**
-     * 检测是否 永久禁用
+     * 检测是否 暂时禁用
      * @param $signature
      * @return bool
      */
-    public function checkForeverDisable($signature = null): bool
+    private function checkDisable($signature = null): bool
     {
         $signature = $signature ?: $this->signature;
 
         $storeApp = new StoreApp();
 
-        return (bool) $storeApp->take($this->disableKey['forever'],$signature);
-    }
-
-    /**
-     * 检测是否 永久禁用
-     * @param $signature
-     * @return bool
-     */
-    public function checkTransiencyDisable($signature = null): bool
-    {
-        $signature = $signature ?: $this->signature;
-
-        $storeApp = new StoreApp();
-
-        return (bool) $storeApp->get($this->disableKey['transiency_prefix'].$signature);
-    }
-
-    /**
-     * 制作Token
-     * (payload加上时间、生成signature)
-     * @return string
-     * @throws Exceptions\HashNotSupport
-     */
-    public function make(): string
-    {
-        $header = $this->encode($this->header);
-
-        $this->payload = $this->addTimeInfo($this->payload);
-        $payload = $this->encode($this->payload);
-
-        $signApp = new SignApp();
-        $this->signature = $signApp->sign($this->header['alg'],$header.'.'.$payload);
-
-        return $this->tokenString = $header.'.'.$payload.'.'.$this->signature;
+        return (bool) $storeApp->get($this->disableKeyPrefix.':'.$signature);
     }
 
     /**

@@ -9,6 +9,7 @@
 namespace MiTsuHaAya\JWT\Config;
 
 use Illuminate\Support\Arr;
+use MiTsuHaAya\JWT\Exceptions\ConfigNotInit;
 
 class Application
 {
@@ -32,14 +33,12 @@ class Application
 
     /**
      * 检测是否初始化，否则使用默认配置
+     * @throws ConfigNotInit
      */
     private static function checkInit(): void
     {
         if(static::$isInit === false){
-            $config = require __DIR__.'/default.php';
-            $publicKey =__DIR__.'/rsa_sha512_public.pem';
-            $privateKey = __DIR__.'/rsa_sha512_private.pem';
-            static::init($config,$publicKey,$privateKey);   // 初始化 config信息
+            throw new ConfigNotInit('配置没有正确的初始化,请检查ServiceProvider是否被注册');
         }
     }
 
@@ -48,6 +47,7 @@ class Application
      * @param $key
      * @param $value
      * @return mixed
+     * @throws ConfigNotInit
      */
     public static function set($key,$value)
     {
@@ -60,6 +60,7 @@ class Application
      * @param $key
      * @param null $default
      * @return mixed
+     * @throws ConfigNotInit
      */
     public static function get($key,$default = null)
     {
@@ -70,6 +71,7 @@ class Application
     /**
      * 获取公钥
      * @return bool|string
+     * @throws ConfigNotInit
      */
     public static function publicKey()
     {
@@ -80,6 +82,7 @@ class Application
     /**
      * 获取私钥
      * @return bool|string
+     * @throws ConfigNotInit
      */
     public static function privateKey()
     {

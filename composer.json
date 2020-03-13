@@ -18,10 +18,12 @@
         "php": "^7.2",
         "ext-json":"*",
         "ext-openssl":"*",
-        "illuminate/support": "^6.8",
-        "illuminate/console": "^6.8",
         "vlucas/phpdotenv": "^3.3",
-        "illuminate/redis": "^6.8"
+        "illuminate/support": "^6.2",
+        "illuminate/console": "^6.2",
+        "symfony/translation": "^4.0",
+        "illuminate/redis": "^6.2",
+        "illuminate/http": "^6.2"
     },
     "autoload": {
         "psr-4": {

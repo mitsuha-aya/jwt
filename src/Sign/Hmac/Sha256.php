@@ -17,9 +17,9 @@ class Sha256 implements Contract
         return 'HS256';
     }
 
-    public function encode($data,$secret): string
+    public function encode($string,$secret): string
     {
-        return hash_hmac('sha256',$data,$secret);
+        return hash_hmac('sha256',$string,$secret);
     }
 
 }

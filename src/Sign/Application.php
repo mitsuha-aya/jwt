@@ -29,11 +29,12 @@ class Application
      * @param $string
      * @return string
      * @throws HashNotSupport
+     * @throws \MiTsuHaAya\JWT\Exceptions\ConfigNotInit
      */
     public function sign($alg,$string): string
     {
-        if(!isset($this->supported[$alg])){
-            throw new HashNotSupport("Sign暂不支持{$alg}算法");
+        if(empty($this->supported[$alg])){
+            throw new HashNotSupport("暂不支持{$alg}算法");
         }
 
         $class = $this->supported[$alg];
@@ -48,6 +49,7 @@ class Application
     /**
      * 获取用于算法加密的密钥
      * @return string
+     * @throws \MiTsuHaAya\JWT\Exceptions\ConfigNotInit
      */
     private function secret(): string
     {
@@ -59,6 +61,7 @@ class Application
      * @param $data
      * @return mixed
      * @throws OpensslEncryptFail
+     * @throws \MiTsuHaAya\JWT\Exceptions\ConfigNotInit
      */
     public function encode($data)
     {
@@ -82,6 +85,7 @@ class Application
      * @param $data
      * @return mixed
      * @throws OpensslDecryptFail
+     * @throws \MiTsuHaAya\JWT\Exceptions\ConfigNotInit
      */
     public function decode($data)
     {
