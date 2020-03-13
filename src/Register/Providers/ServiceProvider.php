@@ -72,7 +72,10 @@ class ServiceProvider extends IlluminateProvider
 
     public function registerMiddleware()
     {
-        
+        $route = $this->app->get('route');
+
+
+
     }
     
     
