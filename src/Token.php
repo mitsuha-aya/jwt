@@ -6,6 +6,8 @@ use Illuminate\Support\Carbon;
 use MiTsuHaAya\JWT\Exceptions\DisableError;
 use MiTsuHaAya\JWT\Exceptions\SignatureIllegal;
 use MiTsuHaAya\JWT\Exceptions\TokenCannotParsed;
+use MiTsuHaAya\JWT\Exceptions\TokenExpired;
+use MiTsuHaAya\JWT\Exceptions\TokenNoThrough;
 use MiTsuHaAya\JWT\Sign\Application as SignApp;
 use MiTsuHaAya\JWT\Store\Application as StoreApp;
 use MiTsuHaAya\JWT\Traits\PropertyToMethod;
@@ -37,9 +39,9 @@ class Token
         'sub' => '',                // subject 主题               【用户类型】
         'aud' => '',                // audience 受众              【前台项目名或域名】
 
-        'iat' => '',                // Issued At 签发时间
-        'nbf' => '',                // Not Before 生效时间
-        'exp' => '',                // expiration time 过期时间
+        'iat' => '',                // Issued At 签发时间 (不会变)
+        'nbf' => '',                // Not Before 生效时间 (刷新后会延长)
+        'exp' => '',                // expiration time 过期时间 (刷新后会延长)
 
         'jti' => '',                // JWT ID 编号
         'encode' => 0,              // 当前Token的 编号 是否已经加密 (0代表没有 1代表有)
@@ -131,20 +133,30 @@ class Token
 
     /**
      * 检测Token是否有效
+     * @param bool $force
      * @param null $payload
      * @param null $signature
      * @return bool
+     * @throws Exceptions\ConfigNotInit
+     * @throws TokenExpired
+     * @throws TokenNoThrough
      */
-    public function isValid($payload = null,$signature = null): bool
+    public function authenticate($force = false,$payload = null,$signature = null): bool
     {
         $payload = $payload ?: $this->payload;
         $signature = $signature ?: $this->signature;
 
         if(! $this->checkTime($payload)){
+            if($force){
+                throw new TokenExpired('Token已过期,请进行刷新');
+            }
             return false;
         }
 
-        if(! $this->checkDisable($signature)){
+        if(!$this->checkRefresh($payload) || !$this->checkDisable($signature)){
+            if($force){
+                throw new TokenNoThrough('Token已彻底失效,请重新获取');
+            }
             return false;
         }
 
@@ -241,7 +253,7 @@ class Token
      * @param null $payload
      * @return bool
      */
-    private function checkTime($payload = null): bool
+    public function checkTime($payload = null): bool
     {
         $payload = $payload ?: $this->payload;
 
@@ -254,9 +266,14 @@ class Token
      * 检测是否 暂时禁用
      * @param $signature
      * @return bool
+     * @throws Exceptions\ConfigNotInit
      */
-    private function checkDisable($signature = null): bool
+    public function checkDisable($signature = null): bool
     {
+        if(!ConfigApp::get('blacklist')){
+            return true;
+        }
+
         $signature = $signature ?: $this->signature;
 
         $storeApp = new StoreApp();
@@ -264,6 +281,25 @@ class Token
         return (bool) $storeApp->get($this->disableKeyPrefix.':'.$signature);
     }
 
+    /**
+     * 检测是否 可以刷新
+     * @param null $payload
+     * @return bool
+     * @throws Exceptions\ConfigNotInit
+     */
+    public function checkRefresh($payload = null): bool
+    {
+        $payload = $payload ?: $this->payload;
+
+        $now = Carbon::now()->toDateTimeString();
+
+        $refreshOverTime = Carbon::parse($payload['iat'])
+            ->addSeconds(ConfigApp::get('refresh_ttl'))
+            ->toDateTimeString();
+
+        return $refreshOverTime > $now;
+    }
+    
     /**
      * 给payload增加时间信息
      * @param array $payload
