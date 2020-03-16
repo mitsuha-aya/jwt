@@ -77,10 +77,10 @@ class ServiceProvider extends IlluminateProvider
      */
     private function registerMiddleware(): void
     {
-        /** @var Route $route */
-        $route = $this->app->get('route');
+        /** @var Route $router */
+        $router = $this->app->get('router');
 
-        $route->middleware('ma-jwt.auth',Authenticate::class);
+        $router->middleware('ma-jwt.auth',Authenticate::class);
     }
 
 
