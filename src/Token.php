@@ -141,7 +141,7 @@ class Token
      * @throws TokenExpired
      * @throws TokenNoThrough
      */
-    public function authenticate($force = false,$payload = null,$signature = null): bool
+    public function authenticate($force = true,$payload = null,$signature = null): bool
     {
         $payload = $payload ?: $this->payload;
         $signature = $signature ?: $this->signature;

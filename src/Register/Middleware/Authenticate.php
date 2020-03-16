@@ -36,17 +36,7 @@ class Authenticate
 
         $token = new Token();
 
-        $token->parse($tokenString);
-
-        // Token过期
-        if(!$token->checkTime()){
-            throw new TokenExpired('Token已过期,请进行刷新');
-        }
-
-        // Token已彻底失效 或 在黑名单中
-        if(!$token->checkRefresh() || !$token->checkDisable()){
-            throw new TokenNoThrough('Token已彻底失效,请重新获取');
-        }
+        $token->parse($tokenString)->authenticate();
 
         return $next($request);
     }

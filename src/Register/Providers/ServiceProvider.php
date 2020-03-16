@@ -8,9 +8,11 @@
 
 namespace MiTsuHaAya\JWT\Register\Providers;
 
+use Illuminate\Routing\Route;
 use Illuminate\Support\ServiceProvider as IlluminateProvider;
 use MiTsuHaAya\JWT\Register\Command\Secret;
 use MiTsuHaAya\JWT\Config\Application as ConfigApp;
+use MiTsuHaAya\JWT\Register\Middleware\Authenticate;
 
 class ServiceProvider extends IlluminateProvider
 {
@@ -70,12 +72,15 @@ class ServiceProvider extends IlluminateProvider
         return $this->app->make('config')->get($publishConfigName) ?: require $configPath;
     }
 
-    public function registerMiddleware()
+    /**
+     * 注册 Token认证 中间件
+     */
+    public function registerMiddleware(): void
     {
+        /** @var Route $route */
         $route = $this->app->get('route');
 
-
-
+        $route->middleware('ma-jwt-auth',Authenticate::class);
     }
     
     
