@@ -32,7 +32,7 @@ class ServiceProvider extends IlluminateProvider
         $privateKey = dirname(__DIR__,2).'/Config/rsa_sha512_private.pem';
         ConfigApp::init($config,$publicKey,$privateKey);   // 初始化 config信息
         
-        
+        $this->registerMiddleware();
     }
 
     /**
@@ -75,7 +75,7 @@ class ServiceProvider extends IlluminateProvider
     /**
      * 注册 Token认证 中间件
      */
-    public function registerMiddleware(): void
+    private function registerMiddleware(): void
     {
         /** @var Route $route */
         $route = $this->app->get('route');
