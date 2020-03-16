@@ -31,7 +31,7 @@ class ServiceProvider extends IlluminateProvider
         $publicKey = dirname(__DIR__,2).'/Config/rsa_sha512_public.pem';
         $privateKey = dirname(__DIR__,2).'/Config/rsa_sha512_private.pem';
         ConfigApp::init($config,$publicKey,$privateKey);   // 初始化 config信息
-        
+
         $this->registerMiddleware();
     }
 
@@ -80,8 +80,8 @@ class ServiceProvider extends IlluminateProvider
         /** @var Route $route */
         $route = $this->app->get('route');
 
-        $route->middleware('ma-jwt-auth',Authenticate::class);
+        $route->middleware('ma-jwt.auth',Authenticate::class);
     }
-    
-    
+
+
 }
