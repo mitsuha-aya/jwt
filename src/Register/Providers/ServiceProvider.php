@@ -59,7 +59,7 @@ class ServiceProvider extends IlluminateProvider
      */
     private function publishConfig($publishConfigName): array
     {
-        $configPath = dirname(__DIR__) . '/Config/default.php';    // 找到 default.php
+        $configPath = dirname(__DIR__,2) . '/Config/default.php';    // 找到 default.php
 
         $this->publishes([
             $configPath => $this->app->configPath("$publishConfigName.php") // Laravel 中的 config 目录
