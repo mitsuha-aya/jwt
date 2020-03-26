@@ -80,9 +80,11 @@ class ServiceProvider extends IlluminateProvider
         /** @var Router $router */
         $router = $this->app->get('router');
 
-        $router->middleware([
-            'ma-jwt.auth' => Authenticate::class
-        ]);
+        $this->app->singleton('ma-jwt.auth',static function(){
+            return new Authenticate();
+        });
+
+        $router->middleware('ma-jwt.auth');
     }
 
 
