@@ -82,7 +82,7 @@ class Token
 
     /**
      * 解析Token
-     * @param string $tokenString
+     * @param mixed $tokenString
      * @return Token
      * @throws Exceptions\ConfigNotInit
      * @throws Exceptions\HashNotSupport
@@ -90,11 +90,15 @@ class Token
      * @throws SignatureIllegal
      * @throws TokenCannotParsed
      */
-    public function parse(string $tokenString): Token
+    public function parse($tokenString): Token
     {
+        if(!is_string($tokenString)){
+            throw new TokenCannotParsed('无法解析Token,Token不是字符串');
+        }
+
         $token = explode('.', $tokenString);
         if(count($token) !== 3){
-            throw new TokenCannotParsed('无法解析Token');
+            throw new TokenCannotParsed('无法解析Token,Token格式错误');
         }
 
         [$header, $payload, $signature] = $token;
