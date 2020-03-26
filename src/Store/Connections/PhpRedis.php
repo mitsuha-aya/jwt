@@ -9,8 +9,6 @@
 namespace MiTsuHaAya\JWT\Store\Connections;
 
 use Illuminate\Redis\Connections\PhpRedisConnection;
-use Illuminate\Support\ConfigurationUrlParser;
-use Illuminate\Redis\Connectors\PhpRedisConnector;
 use MiTsuHaAya\JWT\Store\Contract;
 
 class PhpRedis implements Contract

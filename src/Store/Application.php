@@ -47,11 +47,11 @@ class Application
 
     /**
      * 进行初始化
-     * @return Application
+     * @return void
      * @throws StoreNotSupport
      * @throws \MiTsuHaAya\JWT\Exceptions\ConfigNotInit
      */
-    private function init(): Application
+    private function init(): void
     {
         $defaultConnection = ConfigApp::get('store.default');
 

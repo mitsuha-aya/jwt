@@ -8,7 +8,7 @@
 
 namespace MiTsuHaAya\JWT\Register\Providers;
 
-use Illuminate\Routing\Route;
+use Illuminate\Routing\Router;
 use Illuminate\Support\ServiceProvider as IlluminateProvider;
 use MiTsuHaAya\JWT\Register\Command\Secret;
 use MiTsuHaAya\JWT\Config\Application as ConfigApp;
@@ -77,10 +77,12 @@ class ServiceProvider extends IlluminateProvider
      */
     private function registerMiddleware(): void
     {
-        /** @var Route $router */
+        /** @var Router $router */
         $router = $this->app->get('router');
 
-        $router->middleware('ma-jwt.auth',Authenticate::class);
+        $router->middleware([
+            'ma-jwt.auth' => Authenticate::class
+        ]);
     }
 
 
