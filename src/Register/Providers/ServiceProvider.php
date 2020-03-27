@@ -9,9 +9,11 @@
 namespace MiTsuHaAya\JWT\Register\Providers;
 
 use Illuminate\Routing\Router;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\ServiceProvider as IlluminateProvider;
-use MiTsuHaAya\JWT\Register\Command\Secret;
 use MiTsuHaAya\JWT\Config\Application as ConfigApp;
+use MiTsuHaAya\JWT\Register\Command\Secret;
+use MiTsuHaAya\JWT\Register\Guard\MaJWTGuard;
 use MiTsuHaAya\JWT\Register\Middleware\Authenticate;
 
 class ServiceProvider extends IlluminateProvider
@@ -33,6 +35,7 @@ class ServiceProvider extends IlluminateProvider
         ConfigApp::init($config,$publicKey,$privateKey);   // 初始化 config信息
 
         $this->registerMiddleware();
+        $this->registerGuard();
     }
 
     /**
@@ -87,5 +90,14 @@ class ServiceProvider extends IlluminateProvider
         $router->middleware('ma-jwt.auth');
     }
 
+    /**
+     * 注册 中间件driver
+     */
+    public function registerGuard(): void
+    {
+        Auth::extend('ma-jwt',function($app,$name,array $config){
+            return new MaJWTGuard(Auth::createUserProvider($config['provider']));
+        });
+    }
 
 }

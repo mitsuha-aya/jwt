@@ -21,4 +21,8 @@ large_client_header_buffers 4 4k
 vlucas/phpdotenv ： env函数
 illuminate/support ： ServiceProvider、Arr <br>
 illuminate/console ： laravel的 Artisan Command <br>
-illuminate/redis ： PhpRedis
+symfony/translation: 为了兼容 illuminate/redis <br>
+illuminate/redis ： PhpRedis <br>
+illuminate/http : 从http head 中 获取Token <br>
+illuminate/routing : 注册中间件 <br>
+illuminate/auth : 注册Guard <br>

@@ -8,6 +8,7 @@
 
 namespace MiTsuHaAya\JWT;
 
+use Illuminate\Support\Facades\Request;
 use MiTsuHaAya\JWT\Exceptions\TokenLackPrimaryKey;
 use MiTsuHaAya\JWT\Sign\Application as SignApp;
 use MiTsuHaAya\JWT\Config\Application as ConfigApp;
@@ -112,8 +113,12 @@ class TokenFacade
      * @throws Exceptions\SignatureIllegal
      * @throws Exceptions\TokenCannotParsed
      */
-    public static function parse($tokenString): Token
+    public static function parse($tokenString = null): Token
     {
+        if($tokenString === null){
+            $tokenString = Request::bearerToken();
+        }
+
         static::init();
 
         return static::$token->parse($tokenString);

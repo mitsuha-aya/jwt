@@ -217,6 +217,13 @@ class Token
         return $this->tokenString = $header.'.'.$payload.'.'.$this->signature;
     }
 
+    public function refresh($tokenString = null)
+    {
+        $tokenString = $tokenString ?: $this->tokenString;
+
+
+    }
+    
     /**
      * 检测指定的Token三部分是否合法
      * @param array $header

@@ -24,7 +24,8 @@
         "symfony/translation": "^4.0",
         "illuminate/redis": "^6.2",
         "illuminate/http": "^6.2",
-        "illuminate/routing": "^6.2"
+        "illuminate/routing": "^6.2",
+        "illuminate/auth": "^6.2"
     },
     "autoload": {
         "psr-4": {
