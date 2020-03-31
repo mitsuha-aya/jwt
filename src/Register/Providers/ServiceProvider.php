@@ -8,6 +8,8 @@
 
 namespace MiTsuHaAya\JWT\Register\Providers;
 
+use Illuminate\Contracts\Config\Repository;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\ServiceProvider as IlluminateProvider;
@@ -93,11 +95,31 @@ class ServiceProvider extends IlluminateProvider
     /**
      * 注册 中间件driver
      */
-    public function registerGuard(): void
+    private function registerGuard(): void
     {
-        Auth::extend('ma-jwt',function($app,$name,array $config){
+        Auth::extend('ma-jwt',static function(Application $app,$name,array $config){
             return new MaJWTGuard(Auth::createUserProvider($config['provider']));
         });
+    }
+
+    /**
+     * @param $guardProviderName
+     * @throws \MiTsuHaAya\JWT\Exceptions\ConfigNotInit
+     */
+    private function mount(): void
+    {
+        /** @var Repository $config */
+        $config = $this->app->get('config');
+        $guards = $config->get('auth.guards');
+
+        array_walk($guards,static function($value,$key){
+
+        });
+
+        $this->token = new Token();
+        $this->token->payload('sub',$guardProviderName);    // 用户类型 （Token的）
+
+        $this->token->payload('iss',Request::instance()->getSchemeAndHttpHost());   // 签发人
     }
 
 }

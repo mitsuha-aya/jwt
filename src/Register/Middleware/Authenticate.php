@@ -32,11 +32,9 @@ class Authenticate
      */
     public function handle($request,Closure $next)
     {
-        $tokenString = $request->bearerToken();
-
         $token = new Token();
 
-        $token->parse($tokenString)->authenticate();
+        $token->parse($request->bearerToken())->authenticate();
 
         return $next($request);
     }

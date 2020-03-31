@@ -20,11 +20,15 @@ class MaJWTGuard implements Guard
 {
     use GuardHelpers;
 
+    /**
+     * MaJWTGuard constructor.
+     * @param UserProvider $userProvider
+     */
     public function __construct(UserProvider $userProvider)
     {
         $this->setProvider($userProvider);
     }
-
+    
     /**
      * 啥都没做
      * @param array $credentials
